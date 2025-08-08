@@ -1,0 +1,84 @@
+{
+  "Name":"FusionPCB",
+  "Description":"Make Gerber-files/Zip for FusionPCB,  Upto 8 layers, without Stencil",
+  "URL":"https://www.seeedstudio.io/fusion.html",
+  "GerberDir":"Gerber",
+  "ZipFilename":"*-FusionPCB.ZIP",
+  "Layers": {
+    "F.Cu":"*.GTL",
+    "B.Cu":"*.GBL",
+    "F.Paste":"",
+    "B.Paste":"",
+    "F.SilkS":"*.GTO",
+    "B.SilkS":"*.GBO",
+    "F.Mask":"*.GTS",
+    "B.Mask":"*.GBS",
+    "Edge.Cuts":"*.GML",
+    "In1.Cu":"*.GL2",
+    "In2.Cu":"*.GL3",
+    "In3.Cu":"*.GL4",
+    "In4.Cu":"*.GL5",
+    "In5.Cu":"*.GL6",
+    "In6.Cu":"*.GL7"
+  },
+  "PlotBorderAndTitle":false,
+  "PlotFootprintValues":true,
+  "PlotFootprintReferences":true,
+  "ForcePlotInvisible":false,
+  "ExcludeEdgeLayer":true,
+  "ExcludePadsFromSilk":true,
+  "DoNotTentVias":false,
+  "UseAuxOrigin":true,
+  "LineWidth":0.1,
+
+  "CoodinateFormat46":true,
+  "SubtractMaskFromSilk":false,
+  "UseExtendedX2format": false,
+  "IncludeNetlistInfo":false,
+
+  "Drill": {
+    "Drill":"*.TXT",
+    "DrillMap":"",
+    "NPTH":"",
+    "NPTHMap":"",
+    "Report":""
+  },
+  "MirrorYAxis":false,
+  "MinimalHeader":false,
+  "MergePTHandNPTH":true,
+  "RouteModeForOvalHoles":true,
+  "DrillUnitMM":true,
+  "ZerosFormat":{
+    "DecimalFormat":true,
+    "SuppressLeading":false,
+    "SuppressTrailing":false,
+    "KeepZeros":false
+  },
+  "MapFileFormat":{
+    "HPGL":false,
+    "PostScript":true,
+    "Gerber":false,
+    "DXF":false,
+    "SVG":false,
+    "PDF":false
+  },
+  "OptionalFiles":[],
+  "BomFile":{
+    "TopFilename":"*-FusionPCB-BOM-Top.xlsx",
+    "BottomFilename":"*-FusionPCB-BOM-Bottom.xlsx",
+    "MergeSide":false,
+    "IncludeTHT":false,
+    "Header": "\"Part/Designator\",\"Manufacturer Part Number/Seeed SKU\",\"Quantity\",\"Link\"",
+    "Row": "\"${ref}\",\"${PN}\",${qty},\"${URL}\""
+  },
+  "PosFile":{
+    "TopFilename":"*-FusionPCB-POS-Top.POS",
+    "BottomFilename":"*-FusionPCB-POS-Bottom.POS",
+    "MergeSide":false,
+    "IncludeTHT":false,
+    "Tabs":[8,22,50,8,8,8,8,8],
+    "Header": "### Module positions\r\n## Unit = mm,Angle = deg.\r\n## Side:${side}\r\n# Ref   Val                   Package                                           PosX    PosY    Rot     Side    Type",
+    "Row": "${ref}\t${val}\t${fp}\t${x}\t${y}\t${rot}\t${side}\t${type}",
+    "Footer": "## End\r\n"
+  }
+}

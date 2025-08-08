@@ -1,0 +1,84 @@
+{
+  "Name":"Test",
+  "Description":"Make Gerber-files/Zip for PCBWay,  Upto 8 layers, without Stencil",
+  "URL":"https://www.pcbway.com",
+  "GerberDir":"Gerber",
+  "ZipFilename":"*-PCBWay.ZIP",
+  "Layers": {
+    "F.Cu":"*.gtl",
+    "B.Cu":"*.gbl",
+    "F.Paste":"*.gtp",
+    "B.Paste":"*.gbp",
+    "F.SilkS":"*.gto",
+    "B.SilkS":"*.gbo",
+    "F.Mask":"*.gts",
+    "B.Mask":"*.gbs",
+    "Edge.Cuts":"*.gm1",
+    "In1.Cu":"*.gl2",
+    "In2.Cu":"*.gl3",
+    "In3.Cu":"*.gl4",
+    "In4.Cu":"*.gl5",
+    "In5.Cu":"*.gl6",
+    "In6.Cu":"*.gl7"
+  },
+  "PlotBorderAndTitle":false,
+  "PlotFootprintValues":true,
+  "PlotFootprintReferences":true,
+  "ForcePlotInvisible":false,
+  "ExcludeEdgeLayer":true,
+  "ExcludePadsFromSilk":true,
+  "DoNotTentVias":false,
+  "UseAuxOrigin":false,
+  "LineWidth":0.1,
+
+  "CoodinateFormat46":true,
+  "SubtractMaskFromSilk":false,
+  "UseExtendedX2format": false,
+  "IncludeNetlistInfo":false,
+
+  "Drill": {
+    "Drill":"*.drl",
+    "DrillMap":"*.map",
+    "NPTH":"",
+    "NPTHMap":"",
+    "Report":""
+  },
+  "MirrorYAxis":false,
+  "MinimalHeader":true,
+  "MergePTHandNPTH":true,
+  "RouteModeForOvalHoles":true,
+  "DrillUnitMM":true,
+  "ZerosFormat":{
+    "DecimalFormat":false,
+    "SuppressLeading":true,
+    "SuppressTrailing":false,
+    "KeepZeros":false
+  },
+  "MapFileFormat":{
+    "HPGL":false,
+    "PostScript":true,
+    "Gerber":false,
+    "DXF":false,
+    "SVG":false,
+    "PDF":false
+  },
+  "OptionalFiles":[],
+  "BomFile":{
+    "TopFilename":"*-PCBWay-BOM.csv",
+    "BottomFilename":"",
+    "MergeSide":true,
+    "IncludeTHT":true,
+    "Tabs":[8, 30, 8, 30, 30, 35, 35, 16],
+    "Header": "Item #,Designator,Qty,Manufacturer,Mfg Part #,Description/Value,Package/Footprint,Type",
+    "Row": "${num},\"${ref}\",${qty},\"${MFR}\",\"${PN|val}\",\"${val}\",\"${fp}\",\"${type}\""
+  },
+  "PosFile":{
+    "TopFilename":"*-PCBWay-POS-Top.csv",
+    "BottomFilename":"*-PCBWay-POS-Bottom.csv",
+    "MergeSide":false,
+    "IncludeTHT":false,
+    "Tabs":[10, 10, 10, 6, 10, 36, 8],
+    "Header": "Designator,Footprint,Mid X,Mid Y,TB,Rotation,Comment",
+    "Row": "\"${ref}\",\"${fp}\",${x},${y},\"${side1}\",${rot},\"${type}\""
+  }
+}

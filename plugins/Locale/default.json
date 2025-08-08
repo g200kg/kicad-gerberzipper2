@@ -1,0 +1,17 @@
+{
+  "LABEL":"Make Gerber-files and ZIP for specific PCB manufacturers.",
+  "MENUFACTURERS":"Manufacturers",
+  "URL":"URL",
+  "GERBERDIR":"Gerber Dir",
+  "ZIPFNAME":"Zip Filename",
+  "DESCRIPTION":"Description",
+  "EXEC":"Make Gerber and ZIP",
+  "BOMPOSEXEC":"Make BOM/POS File",
+  "DETAIL":"Show Settings Details",
+  "CLOSE":"Close",
+  "DESC2":"The changes here are temporary. If you want to change it permanently edit the corresponding json file",
+  "COMPLETE":"Gerber and Zip File Complete. \n\n Output file : %s",
+  "BOMFILE":"BOM File",
+  "POSFILE":"Pos File",
+  "BOMPOSCOMPLETE":"BOM/POS File Complete. \n\n BOM-Top file    : %s\n BOM-Bottom file : %s\n POS-Top file    : %s \n POS-Bottom file : %s"
+}
