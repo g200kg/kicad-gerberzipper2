@@ -20,31 +20,31 @@ version = "2.0.0"
 strtab = {}
 
 layer_list = [
-    {'name':'F.Cu',      'fname':'F_Cu',            'id':'F_Cu', 'fnamekey':'${filename(F.Cu)}'},
-    {'name':'B.Cu',      'fname':'B_Cu',            'id':'B_Cu', 'fnamekey':'${filename(B.Cu)}'},
-    {'name':'F.Adhes',   'fname':'F_Adhesive',      'id':'F_Adhes', 'fnamekey':'${filename(F.Adhes)}'},
-    {'name':'B.Adhes',   'fname':'B_Adhesive',      'id':'B_Adhes', 'fnamekey':'${filename(B.Adhes)}'},
-    {'name':'F.Paste',   'fname':'F_Paste',         'id':'F_Paste', 'fnamekey':'${filename(F.Paste)}'},
-    {'name':'B.Paste',   'fname':'B_Paste',         'id':'B_Paste', 'fnamekey':'${filename(B.Paste)}'},
-    {'name':'F.SilkS',   'fname':'F_Silkscreen',    'id':'F_SilkS', 'fnamekey':'${filename(F.SilkS)}'},
-    {'name':'B.SilkS',   'fname':'B_Silkscreen',    'id':'B_SilkS', 'fnamekey':'${filename(B.SilkS)}'},
-    {'name':'F.Mask',    'fname':'F_Mask',          'id':'F_Mask', 'fnamekey':'${filename(F.Mask)}'},
-    {'name':'B.Mask',    'fname':'B_Mask',          'id':'B_Mask', 'fnamekey':'${filename(B.Mask)}'},
-    {'name':'Dwgs.User', 'fname':'User_Drawings',   'id':'Dwgs_User', 'fnamekey':'${filename(Dwgs.User)}'},
-    {'name':'Cmts.User', 'fname':'User_Comments',   'id':'Cmts_User', 'fnamekey':'${filename(Cmts.User)}'},
-    {'name':'Eco1.User', 'fname':'User_Eco1',       'id':'Eco1_User', 'fnamekey':'${filename(Eco1.User)}'},
-    {'name':'Eco2.User', 'fname':'User_Eco2',       'id':'Eco2_User', 'fnamekey':'${filename(Eco2.User)}'},
-    {'name':'Edge.Cuts', 'fname':'Edge_Cuts',       'id':'Edge_Cuts', 'fnamekey':'${filename(Edge.Cuts)}'},
-    {'name':'F.CrtYd',   'fname':'F_Courtyard',     'id':'F_CrtYd', 'fnamekey':'${filename(F.CrtYd)}'},
-    {'name':'B.CrtYd',   'fname':'B_Courtyard',     'id':'B_CrtYd', 'fnamekey':'${filename(B.CrtYd)}'},
-    {'name':'F.Fab',     'fname':'F_Fab',           'id':'F_Fab', 'fnamekey':'${filename(F.Fab)}'},
-    {'name':'B.Fab',     'fname':'B_Fab',           'id':'B_Fab', 'fnamekey':'${filename(B.Fab)}'},
-    {'name':'In1.Cu',    'fname':'In1_Cu',          'id':'In1_Cu', 'fnamekey':'${filename(In1.Cu)}'},
-    {'name':'In2.Cu',    'fname':'In2_Cu',          'id':'In2_Cu', 'fnamekey':'${filename(In2.Cu)}'},
-    {'name':'In3.Cu',    'fname':'In3_Cu',          'id':'In3_Cu', 'fnamekey':'${filename(In3.Cu)}'},
-    {'name':'In4.Cu',    'fname':'In4_Cu',          'id':'In4_Cu', 'fnamekey':'${filename(In4.Cu)}'},
-    {'name':'In5.Cu',    'fname':'In5_Cu',          'id':'In5_Cu', 'fnamekey':'${filename(In5.Cu)}'},
-    {'name':'In6.Cu',    'fname':'In6_Cu',          'id':'In6_Cu', 'fnamekey':'${filename(In6.Cu)}'}
+    {'name':'F.Cu',      'fname':'F_Cu',            'id':'F_Cu',        'fnamekey':'${filename(F.Cu)}'},
+    {'name':'B.Cu',      'fname':'B_Cu',            'id':'B_Cu',        'fnamekey':'${filename(B.Cu)}'},
+    {'name':'F.Adhes',   'fname':'F_Adhesive',      'id':'F_Adhes',     'fnamekey':'${filename(F.Adhes)}'},
+    {'name':'B.Adhes',   'fname':'B_Adhesive',      'id':'B_Adhes',     'fnamekey':'${filename(B.Adhes)}'},
+    {'name':'F.Paste',   'fname':'F_Paste',         'id':'F_Paste',     'fnamekey':'${filename(F.Paste)}'},
+    {'name':'B.Paste',   'fname':'B_Paste',         'id':'B_Paste',     'fnamekey':'${filename(B.Paste)}'},
+    {'name':'F.SilkS',   'fname':'F_Silkscreen',    'id':'F_SilkS',     'fnamekey':'${filename(F.SilkS)}'},
+    {'name':'B.SilkS',   'fname':'B_Silkscreen',    'id':'B_SilkS',     'fnamekey':'${filename(B.SilkS)}'},
+    {'name':'F.Mask',    'fname':'F_Mask',          'id':'F_Mask',      'fnamekey':'${filename(F.Mask)}'},
+    {'name':'B.Mask',    'fname':'B_Mask',          'id':'B_Mask',      'fnamekey':'${filename(B.Mask)}'},
+    {'name':'Dwgs.User', 'fname':'User_Drawings',   'id':'Dwgs_User',   'fnamekey':'${filename(Dwgs.User)}'},
+    {'name':'Cmts.User', 'fname':'User_Comments',   'id':'Cmts_User',   'fnamekey':'${filename(Cmts.User)}'},
+    {'name':'Eco1.User', 'fname':'User_Eco1',       'id':'Eco1_User',   'fnamekey':'${filename(Eco1.User)}'},
+    {'name':'Eco2.User', 'fname':'User_Eco2',       'id':'Eco2_User',   'fnamekey':'${filename(Eco2.User)}'},
+    {'name':'Edge.Cuts', 'fname':'Edge_Cuts',       'id':'Edge_Cuts',   'fnamekey':'${filename(Edge.Cuts)}'},
+    {'name':'F.CrtYd',   'fname':'F_Courtyard',     'id':'F_CrtYd',     'fnamekey':'${filename(F.CrtYd)}'},
+    {'name':'B.CrtYd',   'fname':'B_Courtyard',     'id':'B_CrtYd',     'fnamekey':'${filename(B.CrtYd)}'},
+    {'name':'F.Fab',     'fname':'F_Fab',           'id':'F_Fab',       'fnamekey':'${filename(F.Fab)}'},
+    {'name':'B.Fab',     'fname':'B_Fab',           'id':'B_Fab',       'fnamekey':'${filename(B.Fab)}'},
+    {'name':'In1.Cu',    'fname':'In1_Cu',          'id':'In1_Cu',      'fnamekey':'${filename(In1.Cu)}'},
+    {'name':'In2.Cu',    'fname':'In2_Cu',          'id':'In2_Cu',      'fnamekey':'${filename(In2.Cu)}'},
+    {'name':'In3.Cu',    'fname':'In3_Cu',          'id':'In3_Cu',      'fnamekey':'${filename(In3.Cu)}'},
+    {'name':'In4.Cu',    'fname':'In4_Cu',          'id':'In4_Cu',      'fnamekey':'${filename(In4.Cu)}'},
+    {'name':'In5.Cu',    'fname':'In5_Cu',          'id':'In5_Cu',      'fnamekey':'${filename(In5.Cu)}'},
+    {'name':'In6.Cu',    'fname':'In6_Cu',          'id':'In6_Cu',      'fnamekey':'${filename(In6.Cu)}'}
 ]
 
 default_settings = {
@@ -79,8 +79,10 @@ default_settings = {
   "DoNotTentVias":False,
   "UseAuxOrigin":False,
   "LineWidth":0.1,
+  
+  "Precision":6,
 
-  "CoodinateFormat46":True,
+  "CoordinateFormat46":True,
   "SubtractMaskFromSilk":True,
   "UseExtendedX2format": False,
   "IncludeNetlistInfo":False,
@@ -104,12 +106,11 @@ default_settings = {
     "KeepZeros":False
   },
   "MapFileFormat":{
-    "HPGL":False,
     "PostScript":False,
-    "Gerber":True,
+    "Gerber":False,
     "DXF":False,
     "SVG":False,
-    "PDF":False
+    "PDF":True
   },
   "OptionalFiles":[],
   "BomFile":{
@@ -260,7 +261,7 @@ def renamefile(olddir, oldfname, newdir, newfname, zipfile):
         if os.path.exists(newf):
             os.remove(newf)
         os.rename(oldf, newf)
-        if zipfile:
+        if zipfile != None:
             zipfile.append(newf)
 
 class tableFile():
@@ -384,6 +385,7 @@ def message(s):
     print('GerberZipper: '+s)
 
 def GetBoard():
+    global kicad
     try:
         kicad = KiCad()
         print(f"KiCad version: {kicad.get_version().full_version}")
@@ -402,11 +404,14 @@ def GetBoard():
     except BaseException as e:
         alert(f"PCB Open Error : ({e})")
         exit()
-    print(board)
-    print("os.getcwd() :" + os.getcwd())
-    print("__file__ : " + __file__)
-    print("board.name : " + board.name)
-    print("kicad.get_kicad_binaly_path('kicad-cli) : " + kicad.get_kicad_binary_path('kicad-cli'))
+#    docs = kicad.get_open_documents(3) # doctype = 3 (PCB)
+#    alert(f'path : {docs[0].project.path}')
+#    print("----")
+#    print(board)
+#    print("os.getcwd() :" + os.getcwd())
+#    print("__file__ : " + __file__)
+#    print("board.name : " + board.name)
+#    print("kicad.get_kicad_binaly_path('kicad-cli) : " + kicad.get_kicad_binary_path('kicad-cli'))
     return board
 
 class GerberZipper2():
@@ -422,7 +427,7 @@ class GerberZipper2():
                 else:
                     self.plugin_settings_data["default"] = 0
                     json.dump(self.plugin_settings_data, open(settings_fname, "w"))
-                self.icon_file_name = os.path.join(os.path.dirname(__file__), 'Assets/icon.png')
+                self.icon_file_name = os.path.join(os.path.dirname(__file__), 'Assets/icon48.png')
                 self.manufacturers_dir = os.path.join(os.path.dirname(__file__), 'Manufacturers')
                 manufacturers_list = glob.glob('%s/*.json' % self.manufacturers_dir)
                 self.json_data = []
@@ -440,17 +445,13 @@ class GerberZipper2():
                     fname = os.path.splitext(os.path.basename(fpath))[0]
                     print (fname)
                     strtab[fname] = json.load(codecs.open(fpath, 'r', 'utf-8'))
-                self.exe_path = os.path.abspath(__file__)
-                self.work_dir = os.path.dirname(self.exe_path)
-                self.temp_dir = os.path.join(self.work_dir, 'temp')
-                self.board_path = os.path.join(self.temp_dir, '$$$.kicad_pcb')
-                self.basename = os.path.splitext(os.path.basename(board.name))[0]
-                print(f'board_path : {self.board_path}')
-                print(f'basename : {self.basename}')
-#                print(f'exe_path : {self.exe_path}')
-#                print(f'work_dir : {self.work_dir}')
-#                print(f'temp_dir : {self.temp_dir}')
+#                self.exe_path = os.path.abspath(__file__)
+#                self.work_dir = os.path.dirname(self.exe_path)
+#                self.temp_dir = os.path.join(self.work_dir, 'temp')
+#                self.board_path = os.path.join(self.temp_dir, '$$$.kicad_pcb')
+#                self.basename = os.path.splitext(os.path.basename(board.name))[0]
 #                print(f'board_path : {self.board_path}')
+#                print(f'basename : {self.basename}')
 
                 InitEm()
                 self.szPanel = [Em(75,10), Em(75,38)]
@@ -507,16 +508,17 @@ class GerberZipper2():
                 self.opt_PlotBorderAndTitle = wx.CheckBox(self.panel, wx.ID_ANY, 'PlotBorderAndTitle', pos=Em(23,12))
                 self.opt_PlotFootprintValues = wx.CheckBox(self.panel, wx.ID_ANY, 'PlotFootprintValues', pos=Em(23,13))
                 self.opt_PlotFootprintReferences = wx.CheckBox(self.panel, wx.ID_ANY, 'PlotFootprintReferences', pos=Em(23,14))
-                self.opt_ForcePlotInvisible = wx.CheckBox(self.panel, wx.ID_ANY, 'ForcePlotInvisible', pos=Em(23,15))
-                self.opt_ExcludeEdgeLayer = wx.CheckBox(self.panel, wx.ID_ANY, 'ExcludeEdgeLayer', pos=Em(23,16))
-                self.opt_ExcludePadsFromSilk = wx.CheckBox(self.panel, wx.ID_ANY, 'ExcludePadsFromSilk', pos=Em(23,17))
-                self.opt_DoNotTentVias = wx.CheckBox(self.panel, wx.ID_ANY, 'DoNotTentVias', pos=Em(23,18))
+#                self.opt_ForcePlotInvisible = wx.CheckBox(self.panel, wx.ID_ANY, 'ForcePlotInvisible', pos=Em(23,15))
+#                self.opt_ExcludeEdgeLayer = wx.CheckBox(self.panel, wx.ID_ANY, 'ExcludeEdgeLayer', pos=Em(23,16))
+#                self.opt_ExcludePadsFromSilk = wx.CheckBox(self.panel, wx.ID_ANY, 'ExcludePadsFromSilk', pos=Em(23,17))
+#                self.opt_DoNotTentVias = wx.CheckBox(self.panel, wx.ID_ANY, 'DoNotTentVias', pos=Em(23,18))
                 self.opt_UseAuxOrigin = wx.CheckBox(self.panel, wx.ID_ANY, 'UseAuxOrigin', pos=Em(23,19))
-                self.opt_LineWidthLabel = wx.StaticText(self.panel, wx.ID_ANY, 'LineWidth(mm):', pos=Em(23,20))
-                self.opt_LineWidth = wx.TextCtrl(self.panel, wx.ID_ANY, '', size=Em(5,1), pos=Em(33,20))
+#                self.opt_LineWidthLabel = wx.StaticText(self.panel, wx.ID_ANY, 'LineWidth(mm):', pos=Em(23,20))
+#                self.opt_LineWidth = wx.TextCtrl(self.panel, wx.ID_ANY, '', size=Em(5,1), pos=Em(33,20))
+
                 self.opt_SubtractMaskFromSilk = wx.CheckBox(self.panel, wx.ID_ANY, 'SubtractMaskFromSilk', pos=Em(23, 21))
                 self.opt_UseExtendedX2format = wx.CheckBox(self.panel, wx.ID_ANY, 'UseExtendedX2format', pos=Em(23, 22))
-                self.opt_CoodinateFormat46 = wx.CheckBox(self.panel, wx.ID_ANY, 'CoodinateFormat46', pos=Em(23, 23))
+                self.opt_CoordinateFormat46 = wx.CheckBox(self.panel, wx.ID_ANY, 'CoordinateFormat46', pos=Em(23, 23))
                 self.opt_IncludeNetlistInfo = wx.CheckBox(self.panel, wx.ID_ANY, 'IncludeNetlistInfo', pos=Em(23, 24))
 
                 self.drill = wx.grid.Grid(self.panel, wx.ID_ANY, size=Em(18,6,1,0), pos=Em(44,12))
@@ -545,7 +547,7 @@ class GerberZipper2():
                 wx.StaticText(self.panel, wx.ID_ANY, 'Zeros :', pos=Em(44,23))
                 self.opt_ZerosFormat = wx.ComboBox(self.panel, wx.ID_ANY, '', choices=('DecimalFormat','SuppressLeading','SuppresTrailing', 'KeepZeros'), pos=Em(50,23), size=Em(12,1.5), style=wx.CB_READONLY)
                 wx.StaticText(self.panel, wx.ID_ANY, 'MapFileFormat :', pos=Em(44,24.5))
-                self.opt_MapFileFormat = wx.ComboBox(self.panel, wx.ID_ANY, '', choices=('HPGL','PostScript','Gerber','DXF','SVG','PDF'), pos=Em(54,24.5), size=Em(8,1.5), style=wx.CB_READONLY)
+                self.opt_MapFileFormat = wx.ComboBox(self.panel, wx.ID_ANY, '', choices=('PostScript','Gerber','DXF','SVG','PDF'), pos=Em(54,24.5), size=Em(8,1.5), style=wx.CB_READONLY)
 
                 self.opt_OptionalLabel = wx.StaticText(self.panel, wx.ID_ANY, 'OptionalFile:', pos=Em(4,27.5))
                 self.opt_OptionalFile = wx.TextCtrl(self.panel, wx.ID_ANY, '', size=Em(12,1), pos=Em(15,27.5))
@@ -617,15 +619,15 @@ class GerberZipper2():
                 self.opt_PlotBorderAndTitle.SetValue(self.settings.get('PlotBorderAndTitle',False))
                 self.opt_PlotFootprintValues.SetValue(self.settings.get('PlotFootprintValues',True))
                 self.opt_PlotFootprintReferences.SetValue(self.settings.get('PlotFootprintReferences',True))
-                self.opt_ForcePlotInvisible.SetValue(self.settings.get('ForcePlotInvisible',False))
-                self.opt_ExcludeEdgeLayer.SetValue(self.settings.get('ExcludeEdgeLayer',True))
-                self.opt_ExcludePadsFromSilk.SetValue(self.settings.get('ExcludePadsFromSilk',True))
-                self.opt_DoNotTentVias.SetValue(self.settings.get('DoNotTentVias',False))
+#                self.opt_ForcePlotInvisible.SetValue(self.settings.get('ForcePlotInvisible',False))
+#                self.opt_ExcludeEdgeLayer.SetValue(self.settings.get('ExcludeEdgeLayer',True))
+#                self.opt_ExcludePadsFromSilk.SetValue(self.settings.get('ExcludePadsFromSilk',True))
+#                self.opt_DoNotTentVias.SetValue(self.settings.get('DoNotTentVias',False))
                 self.opt_UseAuxOrigin.SetValue(self.settings.get('UseAuxOrigin', False))
-                self.opt_LineWidth.SetValue(str(self.settings.get('LineWidth', 0.1)))
+#                self.opt_LineWidth.SetValue(str(self.settings.get('LineWidth', 0.1)))
                 self.opt_SubtractMaskFromSilk.SetValue(self.settings.get('SubtractMaskFromSilk', False))
                 self.opt_UseExtendedX2format.SetValue(self.settings.get('UseExtendedX2format', False))
-                self.opt_CoodinateFormat46.SetValue(self.settings.get('CoodinateFormat46',True))
+                self.opt_CoordinateFormat46.SetValue(self.settings.get('CoordinateFormat46',True))
                 self.opt_IncludeNetlistInfo.SetValue(self.settings.get('IncludeNetlistInfo',False))
                 self.opt_DrillUnit.SetSelection(1 if self.settings.get('DrillUnitMM',True) else 0)
                 self.opt_MirrorYAxis.SetValue(self.settings.get('MirrorYAxis', False))
@@ -640,10 +642,10 @@ class GerberZipper2():
                 self.opt_ZerosFormat.SetSelection(i)
 
                 map = self.settings.get('MapFileFormat',{})
-                i = 2
+                i = 4
                 for k in map:
                     if(map[k]):
-                        i = {'HPGL':0,'PostScript':1,'Gerber':2,'DXF':3,'SVG':4,'PDF':5}.get(k,2)
+                        i = {'PostScript':0,'Gerber':1,'DXF':2,'SVG':3,'PDF':4}.get(k,4)
                 self.opt_MapFileFormat.SetSelection(i)
                 files=self.settings.get('OptionalFiles',[])
                 if len(files)==0:
@@ -673,15 +675,15 @@ class GerberZipper2():
                 self.settings['PlotBorderAndTitle'] = self.opt_PlotBorderAndTitle.GetValue()
                 self.settings['PlotFootprintValues'] = self.opt_PlotFootprintValues.GetValue()
                 self.settings['PlotFootprintReferences'] = self.opt_PlotFootprintReferences.GetValue()
-                self.settings['ForcePlotInvisible'] = self.opt_ForcePlotInvisible.GetValue()
-                self.settings['ExcludeEdgeLayer'] = self.opt_ExcludeEdgeLayer.GetValue()
-                self.settings['ExcludePadsFromSilk'] = self.opt_ExcludePadsFromSilk.GetValue()
-                self.settings['DoNotTentVias'] = self.opt_DoNotTentVias.GetValue()
+#                self.settings['ForcePlotInvisible'] = self.opt_ForcePlotInvisible.GetValue()
+#                self.settings['ExcludeEdgeLayer'] = self.opt_ExcludeEdgeLayer.GetValue()
+#                self.settings['ExcludePadsFromSilk'] = self.opt_ExcludePadsFromSilk.GetValue()
+#                self.settings['DoNotTentVias'] = self.opt_DoNotTentVias.GetValue()
                 self.settings['UseAuxOrigin'] = self.opt_UseAuxOrigin.GetValue()
-                self.settings['LineWidth'] = self.opt_LineWidth.GetValue()
+#                self.settings['LineWidth'] = self.opt_LineWidth.GetValue()
                 self.settings['SubtractMaskFromSilk'] = self.opt_SubtractMaskFromSilk.GetValue()
                 self.settings['UseExtendedX2format'] = self.opt_UseExtendedX2format.GetValue()
-                self.settings['CoodinateFormat46'] = self.opt_CoodinateFormat46.GetValue()
+                self.settings['CoordinateFormat46'] = self.opt_CoordinateFormat46.GetValue()
                 self.settings['IncludeNetlistInfo'] = self.opt_IncludeNetlistInfo.GetValue()
                 self.settings['DrillUnitMM'] = True if self.opt_DrillUnit.GetSelection() else False
                 self.settings['MirrorYAxis'] = self.opt_MirrorYAxis.GetValue()
@@ -696,12 +698,11 @@ class GerberZipper2():
                 zeros['KeepZeros'] = i == 3
                 map = self.settings['MapFileFormat']
                 i = self.opt_MapFileFormat.GetSelection()
-                map['HPGL'] = i == 0
-                map['PostScript'] = i == 1
-                map['Gerber'] = i == 2
-                map['DXF'] = i == 3
-                map['SVG'] = i == 4
-                map['PDF'] = i == 5
+                map['PostScript'] = i == 0
+                map['Gerber'] = i == 1
+                map['DXF'] = i == 2
+                map['SVG'] = i == 3
+                map['PDF'] = i == 4
                 f = {'name':self.opt_OptionalFile.GetValue(), 'content':self.opt_OptionalContent.GetValue()}
                 self.settings['OptionalFiles'] = [f]
                 bom = self.settings['BomFile']
@@ -736,6 +737,15 @@ class GerberZipper2():
                 self.Set(self.settings)
 
             def PrepareDirs(self):
+                try:
+                    doc = kicad.get_open_documents(3)
+                except Exception as err:
+                    alert(f'eror \n\n {err}')
+                self.work_dir = doc[0].project.path
+#                self.work_dir = os.path.dirname(__file__)
+                self.temp_dir = os.path.join(self.work_dir, 'temp')
+                self.board_path = os.path.join(self.temp_dir, '$$$.kicad_pcb')
+                self.basename = os.path.splitext(os.path.basename(board.name))[0]
                 self.gerber_dir = os.path.join(self.work_dir, self.gerberdir.GetValue())
                 if not os.path.exists(self.gerber_dir):
                     os.makedirs(self.gerber_dir)
@@ -838,10 +848,16 @@ class GerberZipper2():
                 print('Exec')
                 self.PrepareDirs()
                 self.settings = self.Get()
+#                alert(self.board_path)
+                
                 board.save_as(self.board_path, overwrite = True, include_project = False)
                 zipfiles = []
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW
+                startupinfo.wShowWindow = subprocess.SW_HIDE
 
                 # Gerber
+                opt = ''
                 layers = self.settings['Layers']
                 lystr = ''
                 kylist = layers.keys()
@@ -850,10 +866,29 @@ class GerberZipper2():
                     if layers[k] != '':
                         lystr += k
                         lystr += ','
-                opt = f'-o {self.temp_dir} --no-protel-ext -l {lystr}'
-                cmd = f'kicad-cli pcb export gerbers {opt} {self.board_path}'
-                subprocess.run(cmd, shell=True)
+                lystr = lystr[:-1]
+                if self.settings['PlotBorderAndTitle']:
+                    opt += '--ibt '
+                if not self.settings['PlotFootprintValues']:
+                    opt += '--ev '
+                if not self.settings['PlotFootprintReferences']:
+                    opt += '--erd '
+                if self.settings['SubtractMaskFromSilk']:
+                    opt += '--subtract-soldermask '
+                if not self.settings['UseExtendedX2format']:
+                    opt += '--no-x2 '
+                if not self.settings['IncludeNetlistInfo']:
+                    opt += '--no-netlist '
+                if not self.settings['CoordinateFormat46']:
+                    opt += '--precision 5 '
+                cmd = f'kicad-cli pcb export gerbers {opt} --no-protel-ext -o {self.temp_dir} -l {lystr} {self.board_path}'
+                print(f'opt : {opt}')
                 print(f'cmd : {cmd}')
+                ret = 0
+                try:
+                    ret = subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo).stdout
+                except Exception as err:
+                    alert(f'error \n\n {err}')
                 for k in kylist:
                     if layers[k] != '':
                         fname = getfname(k)
@@ -861,19 +896,48 @@ class GerberZipper2():
 
                 # Drill
                 opt = ''
+                mext = 'pdf'
+                mapf = 'PDF'
+                if self.settings['MirrorYAxis']:
+                    opt += '--excellon-mirror-y '
+                if self.settings['MinimalHeader']:
+                    opt += '--excellon-min-header '
                 if not self.settings['MergePTHandNPTH']:
-                    opt = opt + '--excellon-separate-th'
+                    opt += '--excellon-separate-th '
+                if self.settings['RouteModeForOvalHoles']:
+                    opt += '--excellon-oval-format route '
+                if not self.settings['DrillUnitMM']:
+                    opt += '--u in '
+                zerof = [k for k,v in self.settings['ZerosFormat'].items() if v == True][0]
+                if zerof != 'DecimalFormat':
+                    opt += '--excellon-zeros-format '
+                    opt += {'SuppressLeading':'suppressleading ', 'SuppressTrailing':'suppresstrailing ', 'KeepZeros':'keep '}[zerof]
+                if self.settings['Drill']['DrillMap'] != '':
+                    opt += '--generate-map '
+                    mapf = [k for k,v in self.settings['MapFileFormat'].items() if v == True][0]
+                    opt += '--map-format '
+                    opt += {'PostScript':'ps ','Gerber':'gerberx2 ','DXF':'dxf ','SVG':'svg ','PDF':'pdf '}[mapf]
+                    mext = {'PostScript':'ps','Gerber':'gbr','DXF':'dxf','SVG':'svg','PDF':'pdf'}[mapf]
                 cmd = f'kicad-cli pcb export drill {opt} -o {self.temp_dir} --format excellon {self.board_path}'
-                subprocess.run(cmd, shell=True)
+                print(f'opt : {opt}')
+                print(f'cmd : {cmd}')
+                ret = subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo).stdout
                 if self.settings['MergePTHandNPTH']:
                     renamefile(self.temp_dir, '$$$.drl', self.gerber_dir, self.settings['Drill']['Drill'].replace('*', self.basename), zipfiles)
+                    if self.settings['Drill']['DrillMap'] != '':
+                        renamefile(self.temp_dir, f'$$$-drl_map.{mext}', self.gerber_dir, self.settings['Drill']['DrillMap'].replace('*', self.basename), zipfiles)
                 else:
                     renamefile(self.temp_dir, '$$$-PTH.drl', self.gerber_dir, self.settings['Drill']['Drill'].replace('*', self.basename), zipfiles)
                     renamefile(self.temp_dir, '$$$-NPTH.drl', self.gerber_dir, self.settings['Drill']['NPTH'].replace('*', self.basename), zipfiles)
+                    if self.settings['Drill']['DrillMap'] != '':
+                        renamefile(self.temp_dir, f'$$$-PTH-drl_map.{mext}', self.gerber_dir, self.settings['Drill']['DrillMap'].replace('*', self.basename), zipfiles)
+                    if self.settings['Drill']['NPTHMap'] != '':
+                        renamefile(self.temp_dir, f'$$$-NPTH-drl_map.{mext}', self.gerber_dir, self.settings['Drill']['NPTHMap'].replace('*', self.basename), zipfiles)
 
                 # Zip
                 zipfname = f'{self.gerber_dir}/{self.zipfilename.GetValue().replace("*",self.basename)}'
-                print('zipfname : ', zipfname)
+#                print('zipfname : ', zipfname)
+#                print('zipfiles : ', zipfiles)
                 with zipfile.ZipFile(zipfname,'w',compression=zipfile.ZIP_DEFLATED) as f:
                     for i in range(len(zipfiles)):
                         fnam = zipfiles[i]

@@ -54,7 +54,6 @@
         'KeepZeros': False
     },
     'MapFileFormat': {
-        'HPGL': False,
         'PostScript': True,
         'Gerber': False,
         'DXF': False,

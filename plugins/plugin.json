@@ -1,0 +1,26 @@
+{
+    "$schema": "https://go.kicad.org/api/schemas/v1",
+    "identifier": "com.github.g200kg.kicad-gerberzipper2",
+    "name": "Gerber Zipper 2",
+    "description": "Generate Gerbers/BOM/POS/ZIP for PCB Manufacturers",
+    "runtime": {
+        "type": "python",
+        "min_version": "3.10"
+    },
+    "actions": [
+        {
+            "identifier": "gerber-zipper",
+            "name": "Gerber Zipper 2",
+            "description": "Generate Gerbers/BOM/POS/ZIP",
+            "show-button": true,
+            "scopes": [
+                "pcb"
+            ],
+            "entrypoint": "gerberzipper2.py",
+            "icons-light": [
+                "Assets/icon24.png",
+                "Assets/icon48.png"
+            ]
+        }
+    ]
+}

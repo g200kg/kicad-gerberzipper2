@@ -31,7 +31,7 @@
   "UseAuxOrigin":false,
   "LineWidth":0.1,
 
-  "CoodinateFormat46":true,
+  "CoodinateFormat46":false,
   "SubtractMaskFromSilk":false,
   "UseExtendedX2format": false,
   "IncludeNetlistInfo":false,
