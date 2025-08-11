@@ -6,6 +6,7 @@ import subprocess
 import wx
 import wx.grid
 import os
+import shutil
 import locale
 import zipfile
 import glob
@@ -16,7 +17,7 @@ import inspect
 import traceback
 import re
 
-version = "2.0.0"
+version = "0.5.0"
 strtab = {}
 
 layer_list = [
@@ -73,20 +74,11 @@ default_settings = {
   "PlotBorderAndTitle":False,
   "PlotFootprintValues":True,
   "PlotFootprintReferences":True,
-  "ForcePlotInvisible":False,
-  "ExcludeEdgeLayer":True,
-  "ExcludePadsFromSilk":True,
-  "DoNotTentVias":False,
   "UseAuxOrigin":False,
-  "LineWidth":0.1,
-  
-  "Precision":6,
-
   "CoordinateFormat46":True,
   "SubtractMaskFromSilk":True,
   "UseExtendedX2format": False,
   "IncludeNetlistInfo":False,
-
   "Drill": {
     "Drill":"",
     "DrillMap":"",
@@ -228,7 +220,7 @@ def tabexp(str,tabTable):
     return result
 
 def strreplace(s,d):
-    m = re.findall('${([0-9a-zA-Z|_]*)}',s)
+    m = re.findall('\${([0-9a-zA-Z|_]*)}',s)
     r = {}
     v = {}
     for i in m:
@@ -352,11 +344,8 @@ class tableFile():
                     self.sheet.write(self.row, col, s, font)
                 col += 1
         elif self.type == 'csv':
-            cells = line.split(',')
-            res = []
-            for cell in cells:
-                res.append(strreplace(cell, dic))
-            self.f.write(','.join(res) + '\n')
+            rstr=strreplace(line,dic)
+            self.f.write(rstr+'\n')
         else:
             if format == 'Header':
                 self.f.write(line + '\n')
@@ -383,6 +372,16 @@ class tableFile():
 
 def message(s):
     print('GerberZipper: '+s)
+
+def FpToDict(fp):
+    val = fp.value_field.text.value
+    ref = fp.reference_field.text.value
+    pak = fp.definition.id.name
+    layer = 0 if fp.layer == BoardLayer.BL_F_Cu else 1
+    side = ['Top', 'Bottom'][layer]
+    side1 = side[0]
+    mount = ['','Through hole','SMD','Unspecified'][fp.attributes.mounting_style]
+    return {'val':val, 'ref':ref, 'pak':pack, 'layer':layer, 'side':side, 'side1':side[0], 'type':mount}
 
 def GetBoard():
     global kicad
@@ -445,17 +444,9 @@ class GerberZipper2():
                     fname = os.path.splitext(os.path.basename(fpath))[0]
                     print (fname)
                     strtab[fname] = json.load(codecs.open(fpath, 'r', 'utf-8'))
-#                self.exe_path = os.path.abspath(__file__)
-#                self.work_dir = os.path.dirname(self.exe_path)
-#                self.temp_dir = os.path.join(self.work_dir, 'temp')
-#                self.board_path = os.path.join(self.temp_dir, '$$$.kicad_pcb')
-#                self.basename = os.path.splitext(os.path.basename(board.name))[0]
-#                print(f'board_path : {self.board_path}')
-#                print(f'basename : {self.basename}')
-
                 InitEm()
                 self.szPanel = [Em(75,10), Em(75,38)]
-                wx.Dialog.__init__(self, parent, id=-1, title='GerberZipper '+version, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+                wx.Dialog.__init__(self, parent, id=-1, title=f'Gerber Zipper 2 (ver. {version})', style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
                 self.panel = wx.Panel(self)
                 self.SetIcon(wx.Icon(self.icon_file_name))
 
@@ -487,11 +478,12 @@ class GerberZipper2():
                 self.clsbtn.Bind(wx.EVT_BUTTON, self.OnClose)
                 wx.StaticText(self.panel, wx.ID_ANY, 'ZIP contents', size=Em(12,1), pos=Em(1, 10))
                 wx.StaticLine(self.panel, wx.ID_ANY, size=(Em(56,1)[0],2), pos=Em(9,10.5))
-                wx.StaticBox(self.panel, wx.ID_ANY,'Gerber', pos=Em(2,11), size=Em(40,15))
+                wx.StaticBox(self.panel, wx.ID_ANY,'Gerber', pos=Em(2,11), size=Em(40,12.5))
+                wx.StaticBox(self.panel, wx.ID_ANY,'Origin', pos=Em(2,23.5), size=Em(40,2.5))
                 wx.StaticBox(self.panel, wx.ID_ANY,'Other', pos=Em(2,26), size=Em(64,3))
                 wx.StaticBox(self.panel, wx.ID_ANY,'Drill', pos=Em(43,11), size=Em(20,15))
 
-                self.layer = wx.grid.Grid(self.panel, wx.ID_ANY, size=Em(18,13), pos=Em(3,12))
+                self.layer = wx.grid.Grid(self.panel, wx.ID_ANY, size=Em(18,11), pos=Em(3,12))
                 self.layer.SetColLabelSize(Em(1,1)[1])
                 self.layer.DisableDragColSize()
                 self.layer.DisableDragRowSize()
@@ -512,14 +504,15 @@ class GerberZipper2():
 #                self.opt_ExcludeEdgeLayer = wx.CheckBox(self.panel, wx.ID_ANY, 'ExcludeEdgeLayer', pos=Em(23,16))
 #                self.opt_ExcludePadsFromSilk = wx.CheckBox(self.panel, wx.ID_ANY, 'ExcludePadsFromSilk', pos=Em(23,17))
 #                self.opt_DoNotTentVias = wx.CheckBox(self.panel, wx.ID_ANY, 'DoNotTentVias', pos=Em(23,18))
-                self.opt_UseAuxOrigin = wx.CheckBox(self.panel, wx.ID_ANY, 'UseAuxOrigin', pos=Em(23,19))
 #                self.opt_LineWidthLabel = wx.StaticText(self.panel, wx.ID_ANY, 'LineWidth(mm):', pos=Em(23,20))
 #                self.opt_LineWidth = wx.TextCtrl(self.panel, wx.ID_ANY, '', size=Em(5,1), pos=Em(33,20))
 
-                self.opt_SubtractMaskFromSilk = wx.CheckBox(self.panel, wx.ID_ANY, 'SubtractMaskFromSilk', pos=Em(23, 21))
-                self.opt_UseExtendedX2format = wx.CheckBox(self.panel, wx.ID_ANY, 'UseExtendedX2format', pos=Em(23, 22))
-                self.opt_CoordinateFormat46 = wx.CheckBox(self.panel, wx.ID_ANY, 'CoordinateFormat46', pos=Em(23, 23))
-                self.opt_IncludeNetlistInfo = wx.CheckBox(self.panel, wx.ID_ANY, 'IncludeNetlistInfo', pos=Em(23, 24))
+                self.opt_SubtractMaskFromSilk = wx.CheckBox(self.panel, wx.ID_ANY, 'SubtractMaskFromSilk', pos=Em(23, 15))
+                self.opt_UseExtendedX2format = wx.CheckBox(self.panel, wx.ID_ANY, 'UseExtendedX2format', pos=Em(23, 16))
+                self.opt_CoordinateFormat46 = wx.CheckBox(self.panel, wx.ID_ANY, 'CoordinateFormat46', pos=Em(23, 17))
+                self.opt_IncludeNetlistInfo = wx.CheckBox(self.panel, wx.ID_ANY, 'IncludeNetlistInfo', pos=Em(23, 18))
+
+                self.opt_UseAuxOrigin = wx.CheckBox(self.panel, wx.ID_ANY, 'UseAuxOrigin', pos=Em(23,24.5))
 
                 self.drill = wx.grid.Grid(self.panel, wx.ID_ANY, size=Em(18,6,1,0), pos=Em(44,12))
                 self.drill.DisableDragColSize()
@@ -736,7 +729,7 @@ class GerberZipper2():
                 self.zipfilename.SetValue(self.settings.get('ZipFilename','*.ZIP'))
                 self.Set(self.settings)
 
-            def PrepareDirs(self):
+            def PrepareDirs(self, mktemp):
                 try:
                     doc = kicad.get_open_documents(3)
                 except Exception as err:
@@ -749,7 +742,7 @@ class GerberZipper2():
                 self.gerber_dir = os.path.join(self.work_dir, self.gerberdir.GetValue())
                 if not os.path.exists(self.gerber_dir):
                     os.makedirs(self.gerber_dir)
-                if not os.path.exists(self.temp_dir):
+                if mktemp and not os.path.exists(self.temp_dir):
                     os.makedirs(self.temp_dir)
 
             def OnManufacturers(self,e):
@@ -774,7 +767,7 @@ class GerberZipper2():
             def OnBomPos(self, e):
                 print('BomPos : '+board.name)
                 self.settings = self.Get()
-                self.PrepareDirs()
+                self.PrepareDirs(False)
                 board_basename = (os.path.splitext(os.path.basename(board.name)))[0]
 
                 # BOM
@@ -793,30 +786,30 @@ class GerberZipper2():
                     val = fp.value_field.text.value
                     ref = fp.reference_field.text.value
                     pak = fp.definition.id.name
-                    layer = fp.layer
-                    mount = fp.attributes.mounting_style
+                    layer = 0 if fp.layer == BoardLayer.BL_F_Cu else 1
+                    side = ['Top', 'Bottom'][layer]
+                    side1 = side[0]
+                    mount = ['', 'Through hole', 'SMD', 'Unspecified'][fp.attributes.mounting_style]
                     dnp = fp.attributes.do_not_populate
                     exbom = fp.attributes.exclude_from_bill_of_materials
                     expos = fp.attributes.exclude_from_position_files
-                    print(layer, val, ref, mount, dnp, exbom, expos)
-                    if mount == 2 or (mount == 1 and bomParam.get('IncludeTHT')):
-                        side = 0 if layer == BoardLayer.BL_F_Cu else 1
+                    if mount == 'SMD' or (mount == 'Through hole' and bomParam.get('IncludeTHT')):
                         if bomParam.get('MergeSide'):
-                            side = 0
-                        if val in bomList[side]:
-                            bomList[side][val]['ref'] += ',' + ref
-                            bomList[side][val]['qty'] += 1
+                            layer = 0
+                        if val in bomList[layer]:
+                            bomList[layer][val]['ref'] += ',' + ref
+                            bomList[layer][val]['qty'] += 1
                         else:
-                            bomList[side][val] = {'val':val, 'ref':ref, 'fp':pak, 'qty':1, 'type':mount}
-                            if hasattr(fp, 'GetProperties'):
-                                bomList[side][val].update(fp.GetProperties())
-                            elif hasattr(fp, 'GetFields'):
-                                flds = fp.GetFields()
-                                for fld in flds:
-                                    name = fld.GetName()
-                                    txt = fld.GetText()
-                                    bomList[side][val][name] = txt
-                            bomList[side][val].update(getsubkey(val))
+                            bomList[layer][val] = {'val':val, 'ref':ref, 'fp':pak, 'qty':1, 'type':mount, 'side':side, 'side1':side1}
+#                            if hasattr(fp, 'GetProperties'):
+#                                bomList[layer][val].update(fp.GetProperties())
+#                            elif hasattr(fp, 'GetFields'):
+#                                flds = fp.GetFields()
+#                                for fld in flds:
+#                                    name = fld.GetName()
+#                                    txt = fld.GetText()
+#                                    bomList[layer][val][name] = txt
+                            bomList[layer][val].update(getsubkey(val))
                 rowformat = bomParam.get('Row')
                 header = bomParam.get('Header','')
                 if len(bom_fnameT)>0:
@@ -828,6 +821,7 @@ class GerberZipper2():
                     for val in bomList[0]:
                         bomList[0][val]['num'] = itemNum
                         tfBomTop.addLine(rowformat, bomList[0][val], 'Body')
+                        print(bomList[0][val])
                         itemNum += 1
                     tfBomTop.close()
                 if len(bom_fnameB)>0:
@@ -841,12 +835,78 @@ class GerberZipper2():
                         tfBomBottom.addLine(rowformat, bomList[1][val], 'Body')
                         itemNum += 1
                     tfBomBottom.close()
-                print(bomList)
+
+                # POS
+                posParam = self.settings.get('PosFile',{})
+                fnameT = posParam.get('TopFilename','')
+                fnameB = posParam.get('BottomFilename','')
+                pos_fnameT = ''
+                pos_fnameB = ''
+                if len(fnameT)>0:
+                    pos_fnameT = f'{self.gerber_dir}/{fnameT.replace("*", board_basename)}'
+                if len(fnameB)>0 and not posParam.get('MergeSide'):
+                    pos_fnameB = f'{self.gerber_dir}/{fnameB.replace("*", board_basename)}'
+                try:
+                    if len(pos_fnameT)>0:
+                        tfPosTop = tableFile(pos_fnameT)
+                        tfPosTop.setTabs(posParam.get('Tabs'))
+                        tfPosTop.addLine(posParam.get('Header'), {'side':'Top'}, 'Header')
+                    if len(pos_fnameB)>0:
+                        tfPosBottom = tableFile(pos_fnameB)
+                        tfPosBottom.setTabs(posParam.get('Tabs'))
+                        tfPosBottom.addLine(posParam.get('Header'), {'side':'Bottom'}, 'Header')
+                    print('Top.POS:'+pos_fnameT
+                    +'\nBottom.POS:'+pos_fnameB)
+                    origin = board.get_origin(2)    # drill-origin
+                    if not self.settings['UseAuxOrigin']:
+                        origin.x = 0
+                        origin.y = 0
+                    print(f'origin : {origin}')
+                    rowformat = posParam.get('Row')
+                    print(rowformat+"\n")
+                    for fp in board.get_footprints():
+                        val = fp.value_field.text.value
+                        ref = fp.reference_field.text.value
+                        pos = fp.position
+                        rot = fp.orientation.degrees
+                        pak = fp.definition.id.name
+                        layer = 0 if fp.layer == BoardLayer.BL_F_Cu else 1
+                        side = ['Top', 'Bottom'][layer]
+                        side1 = side[0]
+                        mount = ['', 'Through hole', 'SMD', 'Unspecified'][fp.attributes.mounting_style]
+                        dnp = fp.attributes.do_not_populate
+                        exbom = fp.attributes.exclude_from_bill_of_materials
+                        expos = fp.attributes.exclude_from_position_files
+                        print(f'FP : {ref} : {pos} {rot} {side} {mount} {pak}')
+                        if mount == 'SMD' or (mount == 'Through hole' and posParam.get('IncludeTHT')):
+                            dict = {'val':val, 'ref':ref, 'x':pos.x-origin.x, 'y':pos.y-origin.y, 'fp':pak, 'type':mount, 'side':side, 'side1':side1, 'rot':rot}
+    #                        dict.update(subkey)
+                            row = strreplace(rowformat, dict)
+                            tabs = posParam.get('Tabs')
+                            if tabs:
+                                row = tabexp(row, tabs)
+                            if side1 == 'T' or posParam.get('MergeSide'):
+                                if tfPosTop != None:
+                                    tfPosTop.addLine(rowformat, dict, 'Body')
+                            else:
+                                if tfPosBottom != None:
+                                    tfPosBottom.addLine(rowformat, dict, 'Body')
+
+                    if tfPosTop != None:
+                        tfPosTop.addLine(posParam.get('Footer'), {'side':'top'}, 'Body')
+                        tfPosTop.close()
+                    if tfPosBottom != None:
+                        tfPosBottom.addLine(posParam.get('Footer'), {'side':'bottom'}, 'Body')
+                        tfPosBottom.close()
+                except Exception as e:
+                    print(e)
+                    return
+                alert(getstr('BOMPOSCOMPLETE') % (bom_fnameT, bom_fnameB, pos_fnameT, pos_fnameB), wx.ICON_INFORMATION)
                 e.Skip()
 
             def OnExec(self, e):
                 print('Exec')
-                self.PrepareDirs()
+                self.PrepareDirs(True)
                 self.settings = self.Get()
 #                alert(self.board_path)
                 
@@ -881,6 +941,8 @@ class GerberZipper2():
                     opt += '--no-netlist '
                 if not self.settings['CoordinateFormat46']:
                     opt += '--precision 5 '
+                if self.settings['UseAuxOrigin']:
+                    opt += '--use-drill-file-origin '
                 cmd = f'kicad-cli pcb export gerbers {opt} --no-protel-ext -o {self.temp_dir} -l {lystr} {self.board_path}'
                 print(f'opt : {opt}')
                 print(f'cmd : {cmd}')
@@ -908,6 +970,8 @@ class GerberZipper2():
                     opt += '--excellon-oval-format route '
                 if not self.settings['DrillUnitMM']:
                     opt += '--u in '
+                if self.settings['UseAuxOrigin']:
+                    opt += '--drill-origin plot '
                 zerof = [k for k,v in self.settings['ZerosFormat'].items() if v == True][0]
                 if zerof != 'DecimalFormat':
                     opt += '--excellon-zeros-format '
@@ -943,6 +1007,7 @@ class GerberZipper2():
                         fnam = zipfiles[i]
                         if os.path.exists(fnam):
                             f.write(fnam, os.path.basename(fnam))
+                shutil.rmtree(self.temp_dir)
                 alert(getstr('COMPLETE') % zipfname, wx.ICON_INFORMATION)
 
                 e.Skip()

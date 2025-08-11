@@ -1,9 +1,9 @@
 {
   "Name":"Test",
-  "Description":"Make Gerber-files/Zip for PCBWay,  Upto 8 layers, without Stencil",
-  "URL":"https://www.pcbway.com",
+  "Description":"Make Gerber-files/Zip Upto 8 layers, without Stencil",
+  "URL":"https://www.g200kg.com",
   "GerberDir":"Gerber",
-  "ZipFilename":"*-PCBWay.ZIP",
+  "ZipFilename":"*-Test.ZIP",
   "Layers": {
     "F.Cu":"*.gtl",
     "B.Cu":"*.gbl",
@@ -28,7 +28,7 @@
   "ExcludeEdgeLayer":true,
   "ExcludePadsFromSilk":true,
   "DoNotTentVias":false,
-  "UseAuxOrigin":false,
+  "UseAuxOrigin":true,
   "LineWidth":0.1,
 
   "CoodinateFormat46":false,
@@ -64,7 +64,7 @@
   },
   "OptionalFiles":[],
   "BomFile":{
-    "TopFilename":"*-PCBWay-BOM.csv",
+    "TopFilename":"*-Test-BOM.csv",
     "BottomFilename":"",
     "MergeSide":true,
     "IncludeTHT":true,
@@ -73,8 +73,8 @@
     "Row": "${num},\"${ref}\",${qty},\"${MFR}\",\"${PN|val}\",\"${val}\",\"${fp}\",\"${type}\""
   },
   "PosFile":{
-    "TopFilename":"*-PCBWay-POS-Top.csv",
-    "BottomFilename":"*-PCBWay-POS-Bottom.csv",
+    "TopFilename":"*-Test-POS-Top.csv",
+    "BottomFilename":"*-Test-POS-Bottom.csv",
     "MergeSide":false,
     "IncludeTHT":false,
     "Tabs":[10, 10, 10, 6, 10, 36, 8],
