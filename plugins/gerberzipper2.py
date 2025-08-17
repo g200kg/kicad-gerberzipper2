@@ -1,24 +1,33 @@
 #!/usr/bin/env python3
 
-from kipy import KiCad
-from kipy.proto.board.board_types_pb2 import BoardLayer
-import subprocess
+import sys
+import os
+import re
+import json
 import wx
 import wx.grid
-import os
-import shutil
+import wx.lib.scrolledpanel
 import locale
 import zipfile
+import subprocess
 import glob
-import json
-import sys
+import atexit
+import shutil
 import codecs
 import inspect
 import traceback
-import re
+from kipy import KiCad
+from kipy.proto.board.board_types_pb2 import BoardLayer
+from kipy.proto.common.types import base_types_pb2, DocumentType, DocumentSpecifier
 
 version = "0.5.0"
+kicadCliCmd = "kicad-cli"
+
+chsize = (10,20)
 strtab = {}
+execDialog = None
+report = ''
+
 
 layer_list = [
     {'name':'F.Cu',      'fname':'F_Cu',            'id':'F_Cu',        'fnamekey':'${filename(F.Cu)}'},
@@ -125,10 +134,38 @@ default_settings = {
   }
 }
 
-chsize = (10,20)
+class ExecDialog(wx.Dialog):
+    def __init__(self):
+        wx.Dialog.__init__(self, None, -1, 'GerberZipper 2 Exec')
+        self.SetClientSize(Em(60,20))
+        panel = wx.Panel(self)
+        self.text = wx.TextCtrl(panel, -1, style=wx.TE_MULTILINE, pos=Em(1,1),size=Em(58,16))
+#        self.text.Disable()
+        self.button = wx.Button(panel, wx.ID_OK, "Close", pos=Em(5,18),size=Em(10,1.5))
+        self.button.Hide()
+        self.button.Bind(wx.EVT_BUTTON,self.Close)
+        self.Show()
+    def Progress(self, s):
+        self.text.SetValue(s)
+        self.Refresh()
+        self.Update()
+    def Close(self, e):
+        print('ExecDialog.Close')
+        self.Destroy()
+        e.Skip()
+    def Complete(self, stat):
+        self.button.Show()
+        if not stat:
+            alert('Complete')
+
+def ExecProgress(self, s, icon=0):
+    if self.FindWindowByName('GerberZipper 2 Exec') is None:
+        return ExecDialog()
+    else:
+        return None
 
 def alert(s, icon=0):
-    dialog = wx.MessageDialog(None, s, 'Gerber Zipper', icon)
+    dialog = wx.MessageDialog(None, s, 'Gerber Zipper 2', icon)
     r = dialog.ShowModal()
     return r
 
@@ -172,7 +209,7 @@ def getstr(s):
         for x in strtab:
             if lang[0:3] in x:
                 tab = strtab[x]
-    return tab.get(s, strtab['default'][s])
+    return tab.get(s, strtab['default'].get(s, s))
 
 def forcedel(fname):
     if os.path.exists(fname):
@@ -184,14 +221,6 @@ def forceren(src, dst):
     forcedel(dst)
     if os.path.exists(src):
         os.rename(src, dst)
-
-def refill(board):
-    try:
-        filler = pcbnew.ZONE_FILLER(board)
-        zones = board.Zones()
-        filler.Fill(zones)
-    except:
-        message('Refill Failed')
 
 def getsubkey(s):
     l = s.split(' ')
@@ -403,46 +432,298 @@ def GetBoard():
     except BaseException as e:
         alert(f"PCB Open Error : ({e})")
         exit()
-#    docs = kicad.get_open_documents(3) # doctype = 3 (PCB)
-#    alert(f'path : {docs[0].project.path}')
-#    print("----")
-#    print(board)
-#    print("os.getcwd() :" + os.getcwd())
-#    print("__file__ : " + __file__)
-#    print("board.name : " + board.name)
-#    print("kicad.get_kicad_binaly_path('kicad-cli) : " + kicad.get_kicad_binary_path('kicad-cli'))
     return board
+
+def GerberExec(self, board):
+    global report
+    self.settings = self.Get()
+    zipfiles = []
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = subprocess.SW_HIDE
+
+    # Gerber
+    opt = ''
+    layers = self.settings['Layers']
+    lystr = ''
+    kylist = layers.keys()
+    print(layers)
+    for k in kylist:
+        if layers[k] != '':
+            lystr += k
+            lystr += ','
+    lystr = lystr[:-1]
+    if self.settings['PlotBorderAndTitle']:
+        opt += '--ibt '
+    if not self.settings['PlotFootprintValues']:
+        opt += '--ev '
+    if not self.settings['PlotFootprintReferences']:
+        opt += '--erd '
+    if self.settings['SubtractMaskFromSilk']:
+        opt += '--subtract-soldermask '
+    if not self.settings['UseExtendedX2format']:
+        opt += '--no-x2 '
+    if not self.settings['IncludeNetlistInfo']:
+        opt += '--no-netlist '
+    if not self.settings['CoordinateFormat46']:
+        opt += '--precision 5 '
+    if self.settings['UseAuxOrigin']:
+        opt += '--use-drill-file-origin '
+    cmd = f'kicad-cli pcb export gerbers {opt} --no-protel-ext -o {self.temp_dir} -l {lystr} {self.board_path}'
+    print(f'cmd : {cmd}')
+    ret = 0
+    try:
+        ret = subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo).stdout
+    except Exception as err:
+        alert(f'error \n\n {err}')
+    for k in kylist:
+        if layers[k] != '':
+            fname = getfname(k)
+            renamefile(self.temp_dir, f'$$$-{fname}.gbr', self.gerber_dir, f'{layers[k].replace("*",self.basename)}', zipfiles)
+
+    # Drill
+    opt = ''
+    mext = 'pdf'
+    mapf = 'PDF'
+    if self.settings['MirrorYAxis']:
+        opt += '--excellon-mirror-y '
+    if self.settings['MinimalHeader']:
+        opt += '--excellon-min-header '
+    if not self.settings['MergePTHandNPTH']:
+        opt += '--excellon-separate-th '
+    if self.settings['RouteModeForOvalHoles']:
+        opt += '--excellon-oval-format route '
+    if not self.settings['DrillUnitMM']:
+        opt += '--u in '
+    if self.settings['UseAuxOrigin']:
+        opt += '--drill-origin plot '
+    zerof = [k for k,v in self.settings['ZerosFormat'].items() if v == True][0]
+    if zerof != 'DecimalFormat':
+        opt += '--excellon-zeros-format '
+        opt += {'SuppressLeading':'suppressleading ', 'SuppressTrailing':'suppresstrailing ', 'KeepZeros':'keep '}[zerof]
+    if self.settings['Drill']['DrillMap'] != '':
+        opt += '--generate-map '
+        mapf = [k for k,v in self.settings['MapFileFormat'].items() if v == True][0]
+        opt += '--map-format '
+        opt += {'PostScript':'ps ','Gerber':'gerberx2 ','DXF':'dxf ','SVG':'svg ','PDF':'pdf '}[mapf]
+        mext = {'PostScript':'ps','Gerber':'gbr','DXF':'dxf','SVG':'svg','PDF':'pdf'}[mapf]
+    cmd = f'kicad-cli pcb export drill {opt} -o {self.temp_dir} --format excellon {self.board_path}'
+    print(f'cmd : {cmd}')
+    ret = subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo).stdout
+    if self.settings['MergePTHandNPTH']:
+        renamefile(self.temp_dir, '$$$.drl', self.gerber_dir, self.settings['Drill']['Drill'].replace('*', self.basename), zipfiles)
+        if self.settings['Drill']['DrillMap'] != '':
+            renamefile(self.temp_dir, f'$$$-drl_map.{mext}', self.gerber_dir, self.settings['Drill']['DrillMap'].replace('*', self.basename), zipfiles)
+    else:
+        renamefile(self.temp_dir, '$$$-PTH.drl', self.gerber_dir, self.settings['Drill']['Drill'].replace('*', self.basename), zipfiles)
+        renamefile(self.temp_dir, '$$$-NPTH.drl', self.gerber_dir, self.settings['Drill']['NPTH'].replace('*', self.basename), zipfiles)
+        if self.settings['Drill']['DrillMap'] != '':
+            renamefile(self.temp_dir, f'$$$-PTH-drl_map.{mext}', self.gerber_dir, self.settings['Drill']['DrillMap'].replace('*', self.basename), zipfiles)
+        if self.settings['Drill']['NPTHMap'] != '':
+            renamefile(self.temp_dir, f'$$$-NPTH-drl_map.{mext}', self.gerber_dir, self.settings['Drill']['NPTHMap'].replace('*', self.basename), zipfiles)
+
+    # Zip
+    zipfname = f'{self.gerber_dir}/{self.zipfilename.GetValue().replace("*",self.basename)}'
+    with zipfile.ZipFile(zipfname,'w',compression=zipfile.ZIP_DEFLATED) as f:
+        for i in range(len(zipfiles)):
+            fnam = zipfiles[i]
+            if os.path.exists(fnam):
+                f.write(fnam, os.path.basename(fnam))
+    report += (getstr('COMPLETE') % zipfname)+'\n'
+
+def RefillExec(self, board):
+    global report
+    print('RefillExec')
+    r = board.refill_zones(block=True)
+    print(r)
+    report += 'Done\n'
+
+def DrcExec(self, board):
+    global report
+    print('DrcExec')
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = subprocess.SW_HIDE
+    opt = ''
+    cmd = f'kicad-cli pcb drc {opt} -o {self.gerber_dir}/{self.basename}.rpt --format report {self.board_path}'
+    print(f'cmd : {cmd}')
+    ret = subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo).stdout
+    report += ret
+
+def FabExec(self, board):
+    global report
+    print('FabExec')
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = subprocess.SW_HIDE
+    opt = ''
+    cmd = f'kicad-cli pcb export pdf {opt} -o {self.gerber_dir}/{self.basename}.pdf -l Edge.Cuts,F.Fab {self.board_path}'
+    print(f'cmd : {cmd}')
+    ret = subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo).stdout
+    report += ret
+
+def BomPosExec(self, board):
+    global report
+    self.settings = self.Get()
+    board_basename = (os.path.splitext(os.path.basename(board.name)))[0]
+
+    # BOM
+    bomParam = self.settings.get('BomFile',{})
+    bom_fnameT = ''
+    bom_fnameB = ''
+    fnameT = bomParam.get('TopFilename','')
+    fnameB = bomParam.get('BottomFilename','')
+    if len(fnameT)>0:
+        bom_fnameT = f'{self.gerber_dir}/{fnameT.replace("*", self.basename)}'
+    if len(fnameB)>0 and not bomParam.get('MergeSide'):
+        bom_fnameB = f'{self.gerber_dir}/{fnameB.replace("*", self.basename)}'
+    print('Top.BOM:'+bom_fnameT+'\nBottom.BOM:'+bom_fnameB)
+    bomList = [{},{}]
+    for fp in board.get_footprints():
+        val = fp.value_field.text.value
+        ref = fp.reference_field.text.value
+        pak = fp.definition.id.name
+        layer = 0 if fp.layer == BoardLayer.BL_F_Cu else 1
+        side = ['Top', 'Bottom'][layer]
+        side1 = side[0]
+        mount = ['', 'Through hole', 'SMD', 'Unspecified'][fp.attributes.mounting_style]
+        dnp = fp.attributes.do_not_populate
+        exbom = fp.attributes.exclude_from_bill_of_materials
+        expos = fp.attributes.exclude_from_position_files
+        if mount == 'SMD' or (mount == 'Through hole' and bomParam.get('IncludeTHT')):
+            if bomParam.get('MergeSide'):
+                layer = 0
+            if val in bomList[layer]:
+                bomList[layer][val]['ref'] += ',' + ref
+                bomList[layer][val]['qty'] += 1
+            else:
+                bomList[layer][val] = {'val':val, 'ref':ref, 'fp':pak, 'qty':1, 'type':mount, 'side':side, 'side1':side1}
+                bomList[layer][val].update(getsubkey(val))
+    rowformat = bomParam.get('Row')
+    header = bomParam.get('Header','')
+    if len(bom_fnameT)>0:
+        tfBomTop = tableFile(bom_fnameT)
+        tfBomTop.setTabs(bomParam.get('Tabs'))
+        if header != "":
+            tfBomTop.addLine(header, {}, 'Header')
+        itemNum = 1
+        for val in bomList[0]:
+            bomList[0][val]['num'] = itemNum
+            tfBomTop.addLine(rowformat, bomList[0][val], 'Body')
+            itemNum += 1
+        tfBomTop.close()
+    if len(bom_fnameB)>0:
+        tfBomBottom = tableFile(bom_fnameB)
+        tfBomBottom.setTabs(bomParam.get('Tabs'))
+        if header != "":
+            tfBomBottom.addLine(header, {}, 'Header')
+        itemNum = 1
+        for val in bomList[1]:
+            bomList[1]['num'] = itemNum
+            tfBomBottom.addLine(rowformat, bomList[1][val], 'Body')
+            itemNum += 1
+        tfBomBottom.close()
+
+    # POS
+    posParam = self.settings.get('PosFile',{})
+    fnameT = posParam.get('TopFilename','')
+    fnameB = posParam.get('BottomFilename','')
+    pos_fnameT = ''
+    pos_fnameB = ''
+    if len(fnameT)>0:
+        pos_fnameT = f'{self.gerber_dir}/{fnameT.replace("*", board_basename)}'
+    if len(fnameB)>0 and not posParam.get('MergeSide'):
+        pos_fnameB = f'{self.gerber_dir}/{fnameB.replace("*", board_basename)}'
+    try:
+        if len(pos_fnameT)>0:
+            tfPosTop = tableFile(pos_fnameT)
+            tfPosTop.setTabs(posParam.get('Tabs'))
+            tfPosTop.addLine(posParam.get('Header'), {'side':'Top'}, 'Header')
+        if len(pos_fnameB)>0:
+            tfPosBottom = tableFile(pos_fnameB)
+            tfPosBottom.setTabs(posParam.get('Tabs'))
+            tfPosBottom.addLine(posParam.get('Header'), {'side':'Bottom'}, 'Header')
+        print('Top.POS:'+pos_fnameT+'\nBottom.POS:'+pos_fnameB)
+        origin = board.get_origin(2)    # drill-origin
+        if not self.settings['UseAuxOrigin']:
+            origin.x = 0
+            origin.y = 0
+        print(f'origin : {origin}')
+        rowformat = posParam.get('Row')
+        for fp in board.get_footprints():
+            val = fp.value_field.text.value
+            ref = fp.reference_field.text.value
+            pos = fp.position
+            rot = fp.orientation.degrees
+            pak = fp.definition.id.name
+            layer = 0 if fp.layer == BoardLayer.BL_F_Cu else 1
+            side = ['Top', 'Bottom'][layer]
+            side1 = side[0]
+            mount = ['', 'Through hole', 'SMD', 'Unspecified'][fp.attributes.mounting_style]
+            dnp = fp.attributes.do_not_populate
+            exbom = fp.attributes.exclude_from_bill_of_materials
+            expos = fp.attributes.exclude_from_position_files
+            print(f'FP : {ref} : {pos} {rot} {side} {mount} {pak}')
+            if mount == 'SMD' or (mount == 'Through hole' and posParam.get('IncludeTHT')):
+                dict = {'val':val, 'ref':ref, 'x':pos.x-origin.x, 'y':pos.y-origin.y, 'fp':pak, 'type':mount, 'side':side, 'side1':side1, 'rot':rot}
+#                        dict.update(subkey)
+                row = strreplace(rowformat, dict)
+                tabs = posParam.get('Tabs')
+                if tabs:
+                    row = tabexp(row, tabs)
+                if side1 == 'T' or posParam.get('MergeSide'):
+                    if tfPosTop != None:
+                        tfPosTop.addLine(rowformat, dict, 'Body')
+                else:
+                    if tfPosBottom != None:
+                        tfPosBottom.addLine(rowformat, dict, 'Body')
+
+        if tfPosTop != None:
+            tfPosTop.addLine(posParam.get('Footer'), {'side':'top'}, 'Body')
+            tfPosTop.close()
+        if tfPosBottom != None:
+            tfPosBottom.addLine(posParam.get('Footer'), {'side':'bottom'}, 'Body')
+            tfPosBottom.close()
+    except Exception as e:
+        print(e)
+        return
+    ret = getstr('BOMPOSCOMPLETE') % (bom_fnameT, bom_fnameB, pos_fnameT, pos_fnameB)
+    report += ret
+#    alert(ret, wx.ICON_INFORMATION)
 
 class GerberZipper2():
     def Run(self):
         class Dialog(wx.Dialog):
             def __init__(self, parent):
                 global strtab
+                atexit.register(self.ClosePlugin)
                 prefix_path = os.path.join(os.path.dirname(__file__))
-                settings_fname = os.path.join(prefix_path, 'settings.json')
-                self.plugin_settings_data = {}
-                if os.path.exists(settings_fname):
-                    self.plugin_settings_data = json.load(open(settings_fname))
-                else:
-                    self.plugin_settings_data["default"] = 0
-                    json.dump(self.plugin_settings_data, open(settings_fname, "w"))
+                self.pluginSettings = {}
                 self.icon_file_name = os.path.join(os.path.dirname(__file__), 'Assets/icon48.png')
                 self.manufacturers_dir = os.path.join(os.path.dirname(__file__), 'Manufacturers')
                 manufacturers_list = glob.glob('%s/*.json' % self.manufacturers_dir)
-                self.json_data = []
+                self.json_data = {}
                 for fname in manufacturers_list:
                     try:
-                        self.json_data.append(json.load(codecs.open(fname, 'r', 'utf-8')))
+                        d = json.load(codecs.open(fname, 'r', 'utf-8'))
+                        self.json_data[d['Name']] = json.load(codecs.open(fname, 'r', 'utf-8'))
                     except Exception as err:
                         tb = sys.exc_info()[2]
                         alert('JSON error \n\n File : %s\n%s' % (os.path.basename(fname),err.with_traceback(tb)), wx.ICON_WARNING)
-                self.json_data = sorted(self.json_data, key=lambda x: x['Name'])
+                self.settings_fname = os.path.join(prefix_path, 'GerberZipper2.json')
+                if os.path.exists(self.settings_fname):
+                    self.pluginSettings = json.load(open(self.settings_fname))
+                else:
+                    self.pluginSettings["Recent"] = next(iter(self.json_data))
+                    self.pluginSettings["RefillExec"] = True
+                    self.pluginSettings["DrcExec"] = True
+                    self.pluginSettings["FabExec"] = True
+                    self.pluginSettings["BomPosExec"] = True
                 self.locale_dir = os.path.join(os.path.dirname(__file__), "Locale")
                 locale_list = glob.glob('%s/*.json' % self.locale_dir)
                 strtab = {}
                 for fpath in locale_list:
                     fname = os.path.splitext(os.path.basename(fpath))[0]
-                    print (fname)
                     strtab[fname] = json.load(codecs.open(fpath, 'r', 'utf-8'))
                 InitEm()
                 self.szPanel = [Em(75,10), Em(75,38)]
@@ -451,39 +732,45 @@ class GerberZipper2():
                 self.SetIcon(wx.Icon(self.icon_file_name))
 
                 manufacturers_arr=[]
-                for item in self.json_data:
-                    manufacturers_arr.append(item['Name'])
-                wx.StaticText(self.panel, wx.ID_ANY, getstr('LABEL'), size=Em(70,1), pos=Em(1,1))
-                wx.StaticText(self.panel, wx.ID_ANY, getstr('MENUFACTURERS'),size=Em(14,1), pos=Em(1,2.5))
+                for item in self.json_data.keys():
+                    manufacturers_arr.append(item)
+                wx.StaticText(self.panel, -1, getstr('LABEL'), size=Em(70,1), pos=Em(1,1))
+                wx.StaticText(self.panel, -1, getstr('MENUFACTURERS'),size=Em(14,1), pos=Em(1,2.5))
 
-                self.manufacturers = wx.ComboBox(self.panel, wx.ID_ANY, 'Select Manufacturers', size=Em(30,1.5), pos=Em(16,2.5), choices=manufacturers_arr, style=wx.CB_READONLY)
-                wx.StaticText(self.panel, wx.ID_ANY, getstr('URL'),size=Em(14,1), pos=Em(1,4))
-                self.url = wx.TextCtrl(self.panel, wx.ID_ANY, '', size=Em(30,1), pos=Em(16,4), style=wx.TE_READONLY)
-                wx.StaticText(self.panel, wx.ID_ANY, getstr('GERBERDIR'),size=Em(14,1), pos=Em(1,5.1))
-                self.gerberdir = wx.TextCtrl(self.panel, wx.ID_ANY, '',size=Em(30,1), pos=Em(16,5.1))
-                wx.StaticText(self.panel, wx.ID_ANY, getstr('ZIPFNAME'),size=Em(14,1), pos=Em(1,6.2))
-                self.zipfilename = wx.TextCtrl(self.panel, wx.ID_ANY, '',size=Em(30,1), pos=Em(16,6.2))
-                wx.StaticText(self.panel, wx.ID_ANY, getstr('DESCRIPTION'),size=Em(14,1), pos=Em(1,7.3))
-                self.label = wx.StaticText(self.panel, wx.ID_ANY, '',size=Em(45,1), pos=Em(16,7.3))
-                self.manufacturers.SetSelection(self.plugin_settings_data.get("default",0))
+                self.manufacturers = wx.ComboBox(self.panel, -1, 'Select Manufacturers', size=Em(30,1.5), pos=Em(16,2.5), choices=manufacturers_arr, style=wx.CB_READONLY)
+                wx.StaticText(self.panel, -1, getstr('URL'),size=Em(14,1), pos=Em(1,4))
+                self.url = wx.TextCtrl(self.panel, -1, '', size=Em(30,1), pos=Em(16,4), style=wx.TE_READONLY)
+                wx.StaticText(self.panel, -1, getstr('GERBERDIR'),size=Em(14,1), pos=Em(1,5.1))
+                self.gerberdir = wx.TextCtrl(self.panel, -1, '',size=Em(30,1), pos=Em(16,5.1))
+                wx.StaticText(self.panel, -1, getstr('ZIPFNAME'),size=Em(14,1), pos=Em(1,6.2))
+                self.zipfilename = wx.TextCtrl(self.panel, -1, '',size=Em(30,1), pos=Em(16,6.2))
+                wx.StaticText(self.panel, -1, getstr('DESCRIPTION'),size=Em(14,1), pos=Em(1,7.3))
+                self.label = wx.StaticText(self.panel, -1, '',size=Em(45,1), pos=Em(16,7.3))
 
-                self.detailbtn = wx.ToggleButton(self.panel, wx.ID_ANY, getstr('DETAIL'),size=Em(15,1),pos=Em(2,8.5))
-                self.execbtn = wx.Button(self.panel, wx.ID_ANY, getstr('EXEC'),size=Em(15,1),pos=Em(18,8.5))
-                self.bomposbtn = wx.Button(self.panel, wx.ID_ANY, getstr('BOMPOSEXEC'),size=Em(15,1),pos=Em(34,8.5))
-                self.clsbtn = wx.Button(self.panel, wx.ID_ANY, getstr('CLOSE'),size=Em(15,1),pos=Em(50,8.5))
+                self.opt_RefillExec = wx.CheckBox(self.panel, -1, getstr('REFILLEXEC'), size=Em(15,1),pos=Em(52,3))
+                self.opt_DrcExec = wx.CheckBox(self.panel, -1, getstr('DRCEXEC'), size=Em(15,1),pos=Em(52,4))
+                self.opt_FabExec = wx.CheckBox(self.panel, -1, getstr('FABEXEC'), size=Em(15,1),pos=Em(52,5))
+                self.opt_BomPosExec = wx.CheckBox(self.panel, -1, getstr('BOMPOSEXEC'), size=Em(15,1),pos=Em(52,6))
+
+                self.detailbtn = wx.ToggleButton(self.panel, -1, getstr('DETAIL'),size=Em(15,1),pos=Em(2,8.5))
+                self.execbtn = wx.Button(self.panel, -1, getstr('EXEC'),size=Em(15,1),pos=Em(18,8.5))
+                self.clsbtn = wx.Button(self.panel, -1, getstr('CLOSE'),size=Em(15,1),pos=Em(50,8.5))
                 self.manufacturers.Bind(wx.EVT_COMBOBOX, self.OnManufacturers)
                 self.detailbtn.Bind(wx.EVT_TOGGLEBUTTON, self.OnDetail)
                 self.execbtn.Bind(wx.EVT_BUTTON, self.OnExec)
-                self.bomposbtn.Bind(wx.EVT_BUTTON, self.OnBomPos)
                 self.clsbtn.Bind(wx.EVT_BUTTON, self.OnClose)
-                wx.StaticText(self.panel, wx.ID_ANY, 'ZIP contents', size=Em(12,1), pos=Em(1, 10))
-                wx.StaticLine(self.panel, wx.ID_ANY, size=(Em(56,1)[0],2), pos=Em(9,10.5))
-                wx.StaticBox(self.panel, wx.ID_ANY,'Gerber', pos=Em(2,11), size=Em(40,12.5))
-                wx.StaticBox(self.panel, wx.ID_ANY,'Origin', pos=Em(2,23.5), size=Em(40,2.5))
-                wx.StaticBox(self.panel, wx.ID_ANY,'Other', pos=Em(2,26), size=Em(64,3))
-                wx.StaticBox(self.panel, wx.ID_ANY,'Drill', pos=Em(43,11), size=Em(20,15))
 
-                self.layer = wx.grid.Grid(self.panel, wx.ID_ANY, size=Em(18,11), pos=Em(3,12))
+                self.panel2 = wx.lib.scrolledpanel.ScrolledPanel(self.panel, -1, pos=Em(0,10), size=Em(75,20), style=wx.BORDER_SUNKEN)
+                self.panel2.SetScrollbars(20,20,50,50)
+                
+                wx.StaticText(self.panel2, -1, 'ZIP contents', pos=Em(1,0), size=Em(12,1))
+                wx.StaticLine(self.panel2, -1, pos=Em(9,0.5), size=(Em(56,1)[0],2))
+                wx.StaticBox(self.panel2, -1,'Gerber', pos=Em(2,1), size=Em(65,13))
+                wx.StaticBox(self.panel2, -1,'Drill', pos=Em(2,14), size=Em(65,8))
+                wx.StaticBox(self.panel2, -1,'Origin', pos=Em(2,22), size=Em(65,3))
+                wx.StaticBox(self.panel2, -1,'Other', pos=Em(2,25), size=Em(65,3))
+
+                self.layer = wx.grid.Grid(self.panel2, -1, size=Em(18,11), pos=Em(3,2))
                 self.layer.SetColLabelSize(Em(1,1)[1])
                 self.layer.DisableDragColSize()
                 self.layer.DisableDragRowSize()
@@ -497,24 +784,17 @@ class GerberZipper2():
                 for i in range(len(layer_list)):
                     self.layer.SetCellValue(i, 0, layer_list[i]['name'])
                     self.layer.SetReadOnly(i, 0, isReadOnly=True)
-                self.opt_PlotBorderAndTitle = wx.CheckBox(self.panel, wx.ID_ANY, 'PlotBorderAndTitle', pos=Em(23,12))
-                self.opt_PlotFootprintValues = wx.CheckBox(self.panel, wx.ID_ANY, 'PlotFootprintValues', pos=Em(23,13))
-                self.opt_PlotFootprintReferences = wx.CheckBox(self.panel, wx.ID_ANY, 'PlotFootprintReferences', pos=Em(23,14))
-#                self.opt_ForcePlotInvisible = wx.CheckBox(self.panel, wx.ID_ANY, 'ForcePlotInvisible', pos=Em(23,15))
-#                self.opt_ExcludeEdgeLayer = wx.CheckBox(self.panel, wx.ID_ANY, 'ExcludeEdgeLayer', pos=Em(23,16))
-#                self.opt_ExcludePadsFromSilk = wx.CheckBox(self.panel, wx.ID_ANY, 'ExcludePadsFromSilk', pos=Em(23,17))
-#                self.opt_DoNotTentVias = wx.CheckBox(self.panel, wx.ID_ANY, 'DoNotTentVias', pos=Em(23,18))
-#                self.opt_LineWidthLabel = wx.StaticText(self.panel, wx.ID_ANY, 'LineWidth(mm):', pos=Em(23,20))
-#                self.opt_LineWidth = wx.TextCtrl(self.panel, wx.ID_ANY, '', size=Em(5,1), pos=Em(33,20))
+                self.opt_PlotBorderAndTitle = wx.CheckBox(self.panel2, -1, 'PlotBorderAndTitle', pos=Em(23,2))
+                self.opt_PlotFootprintValues = wx.CheckBox(self.panel2, -1, 'PlotFootprintValues', pos=Em(23,3))
+                self.opt_PlotFootprintReferences = wx.CheckBox(self.panel2, -1, 'PlotFootprintReferences', pos=Em(23,4))
+                self.opt_SubtractMaskFromSilk = wx.CheckBox(self.panel2, -1, 'SubtractMaskFromSilk', pos=Em(23, 5))
+                self.opt_UseExtendedX2format = wx.CheckBox(self.panel2, -1, 'UseExtendedX2format', pos=Em(23, 6))
+                self.opt_CoordinateFormat46 = wx.CheckBox(self.panel2, -1, 'CoordinateFormat46', pos=Em(23, 7))
+                self.opt_IncludeNetlistInfo = wx.CheckBox(self.panel2, -1, 'IncludeNetlistInfo', pos=Em(23, 8))
 
-                self.opt_SubtractMaskFromSilk = wx.CheckBox(self.panel, wx.ID_ANY, 'SubtractMaskFromSilk', pos=Em(23, 15))
-                self.opt_UseExtendedX2format = wx.CheckBox(self.panel, wx.ID_ANY, 'UseExtendedX2format', pos=Em(23, 16))
-                self.opt_CoordinateFormat46 = wx.CheckBox(self.panel, wx.ID_ANY, 'CoordinateFormat46', pos=Em(23, 17))
-                self.opt_IncludeNetlistInfo = wx.CheckBox(self.panel, wx.ID_ANY, 'IncludeNetlistInfo', pos=Em(23, 18))
+                self.opt_UseAuxOrigin = wx.CheckBox(self.panel2, -1, 'UseAuxOrigin', pos=Em(23,23))
 
-                self.opt_UseAuxOrigin = wx.CheckBox(self.panel, wx.ID_ANY, 'UseAuxOrigin', pos=Em(23,24.5))
-
-                self.drill = wx.grid.Grid(self.panel, wx.ID_ANY, size=Em(18,6,1,0), pos=Em(44,12))
+                self.drill = wx.grid.Grid(self.panel2, -1, size=Em(18,6,1,0), pos=Em(3,15))
                 self.drill.DisableDragColSize()
                 self.drill.DisableDragRowSize()
                 self.drill.CreateGrid(5, 2)
@@ -531,25 +811,28 @@ class GerberZipper2():
                     self.drill.SetCellValue(i, 0, drillfile[i])
                     self.drill.SetReadOnly(i, 0, True)
                     self.drill.SetRowSize(i, Em(1,1)[1])
-                wx.StaticText(self.panel, wx.ID_ANY, 'Drill Unit :', pos=Em(44,18))
-                self.opt_DrillUnit = wx.ComboBox(self.panel, wx.ID_ANY, '', choices=('inch','mm'), style=wx.CB_READONLY, pos=Em(53,18), size=Em(8,1))
-                self.opt_MirrorYAxis = wx.CheckBox(self.panel, wx.ID_ANY, 'MirrorYAxis', pos=Em(44,19))
-                self.opt_MinimalHeader = wx.CheckBox(self.panel, wx.ID_ANY, 'MinimalHeader', pos=Em(44,20))
-                self.opt_MergePTHandNPTH = wx.CheckBox(self.panel, wx.ID_ANY, 'MergePTHandNPTH', pos=Em(44,21))
-                self.opt_RouteModeForOvalHoles = wx.CheckBox(self.panel, wx.ID_ANY, 'RouteModeForOvalHoles', pos=Em(44,22))
-                wx.StaticText(self.panel, wx.ID_ANY, 'Zeros :', pos=Em(44,23))
-                self.opt_ZerosFormat = wx.ComboBox(self.panel, wx.ID_ANY, '', choices=('DecimalFormat','SuppressLeading','SuppresTrailing', 'KeepZeros'), pos=Em(50,23), size=Em(12,1.5), style=wx.CB_READONLY)
-                wx.StaticText(self.panel, wx.ID_ANY, 'MapFileFormat :', pos=Em(44,24.5))
-                self.opt_MapFileFormat = wx.ComboBox(self.panel, wx.ID_ANY, '', choices=('PostScript','Gerber','DXF','SVG','PDF'), pos=Em(54,24.5), size=Em(8,1.5), style=wx.CB_READONLY)
+                self.opt_MirrorYAxis = wx.CheckBox(self.panel2, -1, 'MirrorYAxis', pos=Em(23,16))
+                self.opt_MinimalHeader = wx.CheckBox(self.panel2, -1, 'MinimalHeader', pos=Em(23,17))
+                self.opt_MergePTHandNPTH = wx.CheckBox(self.panel2, -1, 'MergePTHandNPTH', pos=Em(23,18))
+                self.opt_RouteModeForOvalHoles = wx.CheckBox(self.panel2, -1, 'RouteModeForOvalHoles', pos=Em(23,19))
+                wx.StaticText(self.panel2, -1, 'Drill Unit :', pos=Em(43,16))
+                self.opt_DrillUnit = wx.ComboBox(self.panel2, -1, '', choices=('inch','mm'), style=wx.CB_READONLY, pos=Em(54,16), size=Em(8,1))
+                self.opt_DrillUnit.Bind(wx.EVT_MOUSEWHEEL, self.Ignore)
+                wx.StaticText(self.panel2, -1, 'Zeros :', pos=Em(43,17.5))
+                self.opt_ZerosFormat = wx.ComboBox(self.panel2, -1, '', choices=('DecimalFormat','SuppressLeading','SuppresTrailing', 'KeepZeros'), pos=Em(54,17.5), size=Em(12,1), style=wx.CB_READONLY)
+                self.opt_ZerosFormat.Bind(wx.EVT_MOUSEWHEEL, self.Ignore)
+                wx.StaticText(self.panel2, -1, 'MapFileFormat :', pos=Em(43,19))
+                self.opt_MapFileFormat = wx.ComboBox(self.panel2, -1, '', choices=('PostScript','Gerber','DXF','SVG','PDF'), pos=Em(54,19), size=Em(8,1), style=wx.CB_READONLY)
+                self.opt_MapFileFormat.Bind(wx.EVT_MOUSEWHEEL, self.Ignore)
 
-                self.opt_OptionalLabel = wx.StaticText(self.panel, wx.ID_ANY, 'OptionalFile:', pos=Em(4,27.5))
-                self.opt_OptionalFile = wx.TextCtrl(self.panel, wx.ID_ANY, '', size=Em(12,1), pos=Em(15,27.5))
-                self.opt_OptionalContent = wx.TextCtrl(self.panel, wx.ID_ANY, '', size=Em(37,1), pos=Em(28,27.5))
+                self.opt_OptionalLabel = wx.StaticText(self.panel2, -1, 'OptionalFile:', pos=Em(4,26))
+                self.opt_OptionalFile = wx.TextCtrl(self.panel2, -1, '', pos=Em(15,26), size=Em(12,1))
+                self.opt_OptionalContent = wx.TextCtrl(self.panel2, -1, '', pos=Em(28,26), size=Em(37,1))
 
-                wx.StaticText(self.panel, wx.ID_ANY, 'BOM/POS', size=Em(7,1), pos=Em(1, 29.5))
-                wx.StaticLine(self.panel, wx.ID_ANY, size=(Em(60,1)[0],2), pos=Em(5,30))
+                wx.StaticText(self.panel2, -1, 'BOM/POS', size=Em(7,1), pos=Em(1, 29))
+                wx.StaticLine(self.panel2, -1, size=(Em(60,1)[0],2), pos=Em(5,30))
 
-                self.bompos = wx.grid.Grid(self.panel, wx.ID_ANY, size=Em(27,5,1,0), pos=Em(3,31))
+                self.bompos = wx.grid.Grid(self.panel2, -1, pos=Em(3,31), size=Em(27,5,1,0))
                 self.bompos.DisableDragColSize()
                 self.bompos.DisableDragRowSize()
                 self.bompos.CreateGrid(5, 2)
@@ -566,29 +849,46 @@ class GerberZipper2():
                     self.bompos.SetCellValue(i, 0, bomposfile[i])
                     self.bompos.SetReadOnly(i, 0, True)
                     self.bompos.SetRowSize(i, Em(1,1)[1])
-                self.opt_BomMergeSide = wx.CheckBox(self.panel, wx.ID_ANY, 'BomMergeSide', pos=Em(31,32))
-                self.opt_BomIncludeTHT = wx.CheckBox(self.panel, wx.ID_ANY, 'BomIncludeTHT', pos=Em(31,33))
-                self.opt_PosMergeSide = wx.CheckBox(self.panel, wx.ID_ANY, 'PosMergeSide', pos=Em(31,34))
-                self.opt_PosIncludeTHT = wx.CheckBox(self.panel, wx.ID_ANY, 'PosIncludeTHT', pos=Em(31,35))
+                self.opt_BomMergeSide = wx.CheckBox(self.panel2, -1, 'BomMergeSide', pos=Em(31,32))
+                self.opt_BomIncludeTHT = wx.CheckBox(self.panel2, -1, 'BomIncludeTHT', pos=Em(31,33))
+                self.opt_PosMergeSide = wx.CheckBox(self.panel2, -1, 'PosMergeSide', pos=Em(31,34))
+                self.opt_PosIncludeTHT = wx.CheckBox(self.panel2, -1, 'PosIncludeTHT', pos=Em(31,35))
+                wx.StaticText(self.panel2, -1, getstr('DESC2'), pos=Em(2,37))
+                self.Bind(wx.EVT_SIZE, self.OnSize)
+                self.Bind(wx.EVT_CHECKBOX, self.OnCheck)
+                rct = self.pluginSettings.get("Recent", False)
+                if rct in self.pluginSettings.get("Recent", []):
+                    self.manufacturers.SetStringSelection(rct)
+                    self.Select(rct)
+                self.opt_RefillExec.SetValue(self.pluginSettings.get('RefillExec',True))
+                self.opt_DrcExec.SetValue(self.pluginSettings.get('DrcExec', True))
+                self.opt_FabExec.SetValue(self.pluginSettings.get('FabExec', True))
+                self.opt_BomPosExec.SetValue(self.pluginSettings.get('BomPosExec', True))
 
-#                wx.StaticText(self.panel, wx.ID_ANY, getstr('BOMFILE'),size=Em(14,1), pos=Em(1,31))
-#                self.bomfile = wx.TextCtrl(self.panel, wx.ID_ANY, '',size=Em(30,1), pos=Em(16,31))
-#                wx.StaticText(self.panel, wx.ID_ANY, getstr('POSFILE'),size=Em(14,1), pos=Em(1,32))
-#                self.posfile = wx.TextCtrl(self.panel, wx.ID_ANY, '',size=Em(30,1), pos=Em(16,32))
+            def Ignore(self, e):
+                wx.PostEvent(e.GetEventObject().GetParent().GetEventHandler(), e)
 
-#                self.opt_BOMTHT = wx.CheckBox(self.panel, wx.ID_ANY, 'BOM THT', pos=Em(35,33))
-#                self.opt_BOMSMD = wx.CheckBox(self.panel, wx.ID_ANY, 'BOM SMD', pos=Em(35,34))
-#                self.opt_PosTHT = wx.CheckBox(self.panel, wx.ID_ANY, 'POS THT', pos=Em(45,33))
-#                self.opt_PosSMD = wx.CheckBox(self.panel, wx.ID_ANY, 'POS SMD', pos=Em(45,34))
+            def ClosePlugin(self):
+                print(f'ClosePlugin : {execDialog}')
+                json.dump(self.pluginSettings, open(self.settings_fname, "w"), indent=4)
+#                if execDialog != None:
+#                    execDialog.Close(None)
 
-#                wx.StaticLine(self.panel, wx.ID_ANY, size=(Em(65,1)[0],2), pos=Em(1,30))
-                wx.StaticText(self.panel, wx.ID_ANY, getstr('DESC2'), pos=Em(2,36.5))
+            def OnSize(self, e):
+#                print("OnSize")
+                self.clSize = self.GetClientSize()
+                self.panel.SetSize(self.clSize.x, self.clSize.y)
+                self.panel2.SetSize(self.clSize.x, self.clSize.y - Em(0,10)[1])
 
-                self.Select(self.plugin_settings_data.get("default",0))
+            def OnCheck(self, e):
+#                print('OnCheck')
+                self.pluginSettings['RefillExec'] = self.opt_RefillExec.GetValue()
+                self.pluginSettings['DrcExec'] = self.opt_DrcExec.GetValue()
+                self.pluginSettings['FabExec'] = self.opt_FabExec.GetValue()
+                self.pluginSettings['BomPosExec'] = self.opt_BomPosExec.GetValue()
 
             def Set(self, settings):
                 self.settings=dict(default_settings,**settings)
-
                 l = self.settings.get('Layers',{})
                 for i in range(self.layer.GetNumberRows()):
                     k = self.layer.GetCellValue(i, 0)
@@ -612,12 +912,7 @@ class GerberZipper2():
                 self.opt_PlotBorderAndTitle.SetValue(self.settings.get('PlotBorderAndTitle',False))
                 self.opt_PlotFootprintValues.SetValue(self.settings.get('PlotFootprintValues',True))
                 self.opt_PlotFootprintReferences.SetValue(self.settings.get('PlotFootprintReferences',True))
-#                self.opt_ForcePlotInvisible.SetValue(self.settings.get('ForcePlotInvisible',False))
-#                self.opt_ExcludeEdgeLayer.SetValue(self.settings.get('ExcludeEdgeLayer',True))
-#                self.opt_ExcludePadsFromSilk.SetValue(self.settings.get('ExcludePadsFromSilk',True))
-#                self.opt_DoNotTentVias.SetValue(self.settings.get('DoNotTentVias',False))
                 self.opt_UseAuxOrigin.SetValue(self.settings.get('UseAuxOrigin', False))
-#                self.opt_LineWidth.SetValue(str(self.settings.get('LineWidth', 0.1)))
                 self.opt_SubtractMaskFromSilk.SetValue(self.settings.get('SubtractMaskFromSilk', False))
                 self.opt_UseExtendedX2format.SetValue(self.settings.get('UseExtendedX2format', False))
                 self.opt_CoordinateFormat46.SetValue(self.settings.get('CoordinateFormat46',True))
@@ -668,12 +963,7 @@ class GerberZipper2():
                 self.settings['PlotBorderAndTitle'] = self.opt_PlotBorderAndTitle.GetValue()
                 self.settings['PlotFootprintValues'] = self.opt_PlotFootprintValues.GetValue()
                 self.settings['PlotFootprintReferences'] = self.opt_PlotFootprintReferences.GetValue()
-#                self.settings['ForcePlotInvisible'] = self.opt_ForcePlotInvisible.GetValue()
-#                self.settings['ExcludeEdgeLayer'] = self.opt_ExcludeEdgeLayer.GetValue()
-#                self.settings['ExcludePadsFromSilk'] = self.opt_ExcludePadsFromSilk.GetValue()
-#                self.settings['DoNotTentVias'] = self.opt_DoNotTentVias.GetValue()
                 self.settings['UseAuxOrigin'] = self.opt_UseAuxOrigin.GetValue()
-#                self.settings['LineWidth'] = self.opt_LineWidth.GetValue()
                 self.settings['SubtractMaskFromSilk'] = self.opt_SubtractMaskFromSilk.GetValue()
                 self.settings['UseExtendedX2format'] = self.opt_UseExtendedX2format.GetValue()
                 self.settings['CoordinateFormat46'] = self.opt_CoordinateFormat46.GetValue()
@@ -700,7 +990,6 @@ class GerberZipper2():
                 self.settings['OptionalFiles'] = [f]
                 bom = self.settings['BomFile']
                 pos = self.settings['PosFile']
-#                self.opt_BomMergeSide = wx.CheckBox(self.panel, wx.ID_ANY, 'BomMergeSide', pos=Em(31,32))
                 bom['TopFilename'] = self.bompos.GetCellValue(0, 1)
                 bom['BottomFilename'] = self.bompos.GetCellValue(1, 1)
                 pos['TopFilename'] = self.bompos.GetCellValue(2, 1)
@@ -716,13 +1005,17 @@ class GerberZipper2():
 #                pos['SMD'] = self.opt_PosSMD.GetValue()
                 return self.settings
 
-            def Select(self, n):
-                self.settings = self.json_data[n]
-                # Save this selection as default
-                self.plugin_settings_data["default"] = n
+            def Select(self, name):
+                print('Select:"'+name+'"')
+                self.settings = default_settings
+                if(name in self.json_data):
+                    self.settings = self.json_data[name]
+                else:
+                    for k in self.json_data.keys():
+                        self.settings = self.json_data[k]
+                        break
                 prefix_path = os.path.join(os.path.dirname(__file__))
-                settings_fname = os.path.join(prefix_path, 'settings.json');                
-                json.dump(self.plugin_settings_data, open(settings_fname,"w"))
+                self.pluginSettings['Recent'] = name
                 self.label.SetLabel(self.settings.get('Description', ''))
                 self.url.SetValue(self.settings.get('URL','---'))
                 self.gerberdir.SetValue(self.settings.get('GerberDir','Gerber'))
@@ -731,7 +1024,7 @@ class GerberZipper2():
 
             def PrepareDirs(self, mktemp):
                 try:
-                    doc = kicad.get_open_documents(3)
+                    doc = kicad.get_open_documents(DocumentType.DOCTYPE_PCB)
                 except Exception as err:
                     alert(f'eror \n\n {err}')
                 self.work_dir = doc[0].project.path
@@ -747,14 +1040,12 @@ class GerberZipper2():
 
             def OnManufacturers(self,e):
                 obj = e.GetEventObject()
-                self.Select(obj.GetSelection())
+                self.Select(obj.GetStringSelection())
                 e.Skip()
 
             def OnDetail(self, e):
-                print(self.szPanel)
                 if self.detailbtn.GetValue():
                     self.SetClientSize(wx.Size(self.szPanel[1][0], self.szPanel[1][1]))
-                    self.opt_ZerosFormat.SetPosition(wx.Point(Em(50,23)[0],Em(50,23)[1]))
                 else:
                     self.SetClientSize(wx.Size(self.szPanel[0][0], self.szPanel[0][1]))
                 if e:
@@ -764,254 +1055,58 @@ class GerberZipper2():
                 e.Skip()
                 self.Close()
         
-            def OnBomPos(self, e):
-                print('BomPos : '+board.name)
-                self.settings = self.Get()
-                self.PrepareDirs(False)
-                board_basename = (os.path.splitext(os.path.basename(board.name)))[0]
-
-                # BOM
-                bomParam = self.settings.get('BomFile',{})
-                bom_fnameT = ''
-                bom_fnameB = ''
-                fnameT = bomParam.get('TopFilename','')
-                fnameB = bomParam.get('BottomFilename','')
-                if len(fnameT)>0:
-                    bom_fnameT = f'{self.gerber_dir}/{fnameT.replace("*", self.basename)}'
-                if len(fnameB)>0 and not bomParam.get('MergeSide'):
-                    bom_fnameB = f'{self.gerber_dir}/{fnameB.replace("*", self.basename)}'
-                print('Top.BOM:'+bom_fnameT+'\nBottom.BOM:'+bom_fnameB)
-                bomList = [{},{}]
-                for fp in board.get_footprints():
-                    val = fp.value_field.text.value
-                    ref = fp.reference_field.text.value
-                    pak = fp.definition.id.name
-                    layer = 0 if fp.layer == BoardLayer.BL_F_Cu else 1
-                    side = ['Top', 'Bottom'][layer]
-                    side1 = side[0]
-                    mount = ['', 'Through hole', 'SMD', 'Unspecified'][fp.attributes.mounting_style]
-                    dnp = fp.attributes.do_not_populate
-                    exbom = fp.attributes.exclude_from_bill_of_materials
-                    expos = fp.attributes.exclude_from_position_files
-                    if mount == 'SMD' or (mount == 'Through hole' and bomParam.get('IncludeTHT')):
-                        if bomParam.get('MergeSide'):
-                            layer = 0
-                        if val in bomList[layer]:
-                            bomList[layer][val]['ref'] += ',' + ref
-                            bomList[layer][val]['qty'] += 1
-                        else:
-                            bomList[layer][val] = {'val':val, 'ref':ref, 'fp':pak, 'qty':1, 'type':mount, 'side':side, 'side1':side1}
-#                            if hasattr(fp, 'GetProperties'):
-#                                bomList[layer][val].update(fp.GetProperties())
-#                            elif hasattr(fp, 'GetFields'):
-#                                flds = fp.GetFields()
-#                                for fld in flds:
-#                                    name = fld.GetName()
-#                                    txt = fld.GetText()
-#                                    bomList[layer][val][name] = txt
-                            bomList[layer][val].update(getsubkey(val))
-                rowformat = bomParam.get('Row')
-                header = bomParam.get('Header','')
-                if len(bom_fnameT)>0:
-                    tfBomTop = tableFile(bom_fnameT)
-                    tfBomTop.setTabs(bomParam.get('Tabs'))
-                    if header != "":
-                        tfBomTop.addLine(header, {}, 'Header')
-                    itemNum = 1
-                    for val in bomList[0]:
-                        bomList[0][val]['num'] = itemNum
-                        tfBomTop.addLine(rowformat, bomList[0][val], 'Body')
-                        print(bomList[0][val])
-                        itemNum += 1
-                    tfBomTop.close()
-                if len(bom_fnameB)>0:
-                    tfBomBottom = tableFile(bom_fnameB)
-                    tfBomBottom.setTabs(bomParam.get('Tabs'))
-                    if header != "":
-                        tfBomBottom.addLine(header, {}, 'Header')
-                    itemNum = 1
-                    for val in bomList[1]:
-                        bomList[1]['num'] = itemNum
-                        tfBomBottom.addLine(rowformat, bomList[1][val], 'Body')
-                        itemNum += 1
-                    tfBomBottom.close()
-
-                # POS
-                posParam = self.settings.get('PosFile',{})
-                fnameT = posParam.get('TopFilename','')
-                fnameB = posParam.get('BottomFilename','')
-                pos_fnameT = ''
-                pos_fnameB = ''
-                if len(fnameT)>0:
-                    pos_fnameT = f'{self.gerber_dir}/{fnameT.replace("*", board_basename)}'
-                if len(fnameB)>0 and not posParam.get('MergeSide'):
-                    pos_fnameB = f'{self.gerber_dir}/{fnameB.replace("*", board_basename)}'
+            def OnExec(self, e):
+                global report, execDialog
+                report = 'Exec Start\n'
                 try:
-                    if len(pos_fnameT)>0:
-                        tfPosTop = tableFile(pos_fnameT)
-                        tfPosTop.setTabs(posParam.get('Tabs'))
-                        tfPosTop.addLine(posParam.get('Header'), {'side':'Top'}, 'Header')
-                    if len(pos_fnameB)>0:
-                        tfPosBottom = tableFile(pos_fnameB)
-                        tfPosBottom.setTabs(posParam.get('Tabs'))
-                        tfPosBottom.addLine(posParam.get('Header'), {'side':'Bottom'}, 'Header')
-                    print('Top.POS:'+pos_fnameT
-                    +'\nBottom.POS:'+pos_fnameB)
-                    origin = board.get_origin(2)    # drill-origin
-                    if not self.settings['UseAuxOrigin']:
-                        origin.x = 0
-                        origin.y = 0
-                    print(f'origin : {origin}')
-                    rowformat = posParam.get('Row')
-                    print(rowformat+"\n")
-                    for fp in board.get_footprints():
-                        val = fp.value_field.text.value
-                        ref = fp.reference_field.text.value
-                        pos = fp.position
-                        rot = fp.orientation.degrees
-                        pak = fp.definition.id.name
-                        layer = 0 if fp.layer == BoardLayer.BL_F_Cu else 1
-                        side = ['Top', 'Bottom'][layer]
-                        side1 = side[0]
-                        mount = ['', 'Through hole', 'SMD', 'Unspecified'][fp.attributes.mounting_style]
-                        dnp = fp.attributes.do_not_populate
-                        exbom = fp.attributes.exclude_from_bill_of_materials
-                        expos = fp.attributes.exclude_from_position_files
-                        print(f'FP : {ref} : {pos} {rot} {side} {mount} {pak}')
-                        if mount == 'SMD' or (mount == 'Through hole' and posParam.get('IncludeTHT')):
-                            dict = {'val':val, 'ref':ref, 'x':pos.x-origin.x, 'y':pos.y-origin.y, 'fp':pak, 'type':mount, 'side':side, 'side1':side1, 'rot':rot}
-    #                        dict.update(subkey)
-                            row = strreplace(rowformat, dict)
-                            tabs = posParam.get('Tabs')
-                            if tabs:
-                                row = tabexp(row, tabs)
-                            if side1 == 'T' or posParam.get('MergeSide'):
-                                if tfPosTop != None:
-                                    tfPosTop.addLine(rowformat, dict, 'Body')
-                            else:
-                                if tfPosBottom != None:
-                                    tfPosBottom.addLine(rowformat, dict, 'Body')
-
-                    if tfPosTop != None:
-                        tfPosTop.addLine(posParam.get('Footer'), {'side':'top'}, 'Body')
-                        tfPosTop.close()
-                    if tfPosBottom != None:
-                        tfPosBottom.addLine(posParam.get('Footer'), {'side':'bottom'}, 'Body')
-                        tfPosBottom.close()
+                    execDialog = ExecProgress(self, 'test')
+                    if execDialog == None:
+                        return
+                    print('Exec : '+board.name)
+                    execDialog.Progress(report)
+                    self.PrepareDirs(True)
+                    board.save_as(self.board_path, overwrite = True, include_project = False)
+                    execDialog.Progress(report)
+                    report += '\n--- Refill ---\n'
+                    execDialog.Progress(report)
+                    if self.pluginSettings['RefillExec']:
+                        RefillExec(self, board)
+                    else:
+                        report += '    Skip\n'
+                    report += '\n--- DRC ---\n'
+                    execDialog.Progress(report)
+                    if(self.pluginSettings['DrcExec']):
+                        DrcExec(self, board)
+                    else:
+                        report += '    Skip\n'
+                    report += '\n--- Gerber ---\n'
+                    execDialog.Progress(report)
+                    GerberExec(self, board)
+                    report += '\n--- Fab ---\n'
+                    execDialog.Progress(report)
+                    if(self.pluginSettings['FabExec']):
+                        FabExec(self, board)
+                    else:
+                        report += '    Skip\n'
+                    report += '\n--- BOM/POS ---\n'
+                    execDialog.Progress(report)
+                    if(self.pluginSettings['BomPosExec']):
+                        BomPosExec(self, board)
+                    else:
+                        report += '    Skip\n'
+                    print('\nComplete\n\n')
+                    report += '    \nComplete\n\n'
+                    execDialog.Progress(report)
+                    shutil.rmtree(self.temp_dir)
+                    execDialog.Progress(report)
                 except Exception as e:
+                    execDialog.Complete(1)
                     print(e)
                     return
-                alert(getstr('BOMPOSCOMPLETE') % (bom_fnameT, bom_fnameB, pos_fnameT, pos_fnameB), wx.ICON_INFORMATION)
+                execDialog.Complete(0)
+#                execDialog.Close()
+#                alert(report)
                 e.Skip()
-
-            def OnExec(self, e):
-                print('Exec')
-                self.PrepareDirs(True)
-                self.settings = self.Get()
-#                alert(self.board_path)
-                
-                board.save_as(self.board_path, overwrite = True, include_project = False)
-                zipfiles = []
-                startupinfo = subprocess.STARTUPINFO()
-                startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW
-                startupinfo.wShowWindow = subprocess.SW_HIDE
-
-                # Gerber
-                opt = ''
-                layers = self.settings['Layers']
-                lystr = ''
-                kylist = layers.keys()
-                print(layers)
-                for k in kylist:
-                    if layers[k] != '':
-                        lystr += k
-                        lystr += ','
-                lystr = lystr[:-1]
-                if self.settings['PlotBorderAndTitle']:
-                    opt += '--ibt '
-                if not self.settings['PlotFootprintValues']:
-                    opt += '--ev '
-                if not self.settings['PlotFootprintReferences']:
-                    opt += '--erd '
-                if self.settings['SubtractMaskFromSilk']:
-                    opt += '--subtract-soldermask '
-                if not self.settings['UseExtendedX2format']:
-                    opt += '--no-x2 '
-                if not self.settings['IncludeNetlistInfo']:
-                    opt += '--no-netlist '
-                if not self.settings['CoordinateFormat46']:
-                    opt += '--precision 5 '
-                if self.settings['UseAuxOrigin']:
-                    opt += '--use-drill-file-origin '
-                cmd = f'kicad-cli pcb export gerbers {opt} --no-protel-ext -o {self.temp_dir} -l {lystr} {self.board_path}'
-                print(f'opt : {opt}')
-                print(f'cmd : {cmd}')
-                ret = 0
-                try:
-                    ret = subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo).stdout
-                except Exception as err:
-                    alert(f'error \n\n {err}')
-                for k in kylist:
-                    if layers[k] != '':
-                        fname = getfname(k)
-                        renamefile(self.temp_dir, f'$$$-{fname}.gbr', self.gerber_dir, f'{layers[k].replace("*",self.basename)}', zipfiles)
-
-                # Drill
-                opt = ''
-                mext = 'pdf'
-                mapf = 'PDF'
-                if self.settings['MirrorYAxis']:
-                    opt += '--excellon-mirror-y '
-                if self.settings['MinimalHeader']:
-                    opt += '--excellon-min-header '
-                if not self.settings['MergePTHandNPTH']:
-                    opt += '--excellon-separate-th '
-                if self.settings['RouteModeForOvalHoles']:
-                    opt += '--excellon-oval-format route '
-                if not self.settings['DrillUnitMM']:
-                    opt += '--u in '
-                if self.settings['UseAuxOrigin']:
-                    opt += '--drill-origin plot '
-                zerof = [k for k,v in self.settings['ZerosFormat'].items() if v == True][0]
-                if zerof != 'DecimalFormat':
-                    opt += '--excellon-zeros-format '
-                    opt += {'SuppressLeading':'suppressleading ', 'SuppressTrailing':'suppresstrailing ', 'KeepZeros':'keep '}[zerof]
-                if self.settings['Drill']['DrillMap'] != '':
-                    opt += '--generate-map '
-                    mapf = [k for k,v in self.settings['MapFileFormat'].items() if v == True][0]
-                    opt += '--map-format '
-                    opt += {'PostScript':'ps ','Gerber':'gerberx2 ','DXF':'dxf ','SVG':'svg ','PDF':'pdf '}[mapf]
-                    mext = {'PostScript':'ps','Gerber':'gbr','DXF':'dxf','SVG':'svg','PDF':'pdf'}[mapf]
-                cmd = f'kicad-cli pcb export drill {opt} -o {self.temp_dir} --format excellon {self.board_path}'
-                print(f'opt : {opt}')
-                print(f'cmd : {cmd}')
-                ret = subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo).stdout
-                if self.settings['MergePTHandNPTH']:
-                    renamefile(self.temp_dir, '$$$.drl', self.gerber_dir, self.settings['Drill']['Drill'].replace('*', self.basename), zipfiles)
-                    if self.settings['Drill']['DrillMap'] != '':
-                        renamefile(self.temp_dir, f'$$$-drl_map.{mext}', self.gerber_dir, self.settings['Drill']['DrillMap'].replace('*', self.basename), zipfiles)
-                else:
-                    renamefile(self.temp_dir, '$$$-PTH.drl', self.gerber_dir, self.settings['Drill']['Drill'].replace('*', self.basename), zipfiles)
-                    renamefile(self.temp_dir, '$$$-NPTH.drl', self.gerber_dir, self.settings['Drill']['NPTH'].replace('*', self.basename), zipfiles)
-                    if self.settings['Drill']['DrillMap'] != '':
-                        renamefile(self.temp_dir, f'$$$-PTH-drl_map.{mext}', self.gerber_dir, self.settings['Drill']['DrillMap'].replace('*', self.basename), zipfiles)
-                    if self.settings['Drill']['NPTHMap'] != '':
-                        renamefile(self.temp_dir, f'$$$-NPTH-drl_map.{mext}', self.gerber_dir, self.settings['Drill']['NPTHMap'].replace('*', self.basename), zipfiles)
-
-                # Zip
-                zipfname = f'{self.gerber_dir}/{self.zipfilename.GetValue().replace("*",self.basename)}'
-#                print('zipfname : ', zipfname)
-#                print('zipfiles : ', zipfiles)
-                with zipfile.ZipFile(zipfname,'w',compression=zipfile.ZIP_DEFLATED) as f:
-                    for i in range(len(zipfiles)):
-                        fnam = zipfiles[i]
-                        if os.path.exists(fnam):
-                            f.write(fnam, os.path.basename(fnam))
-                shutil.rmtree(self.temp_dir)
-                alert(getstr('COMPLETE') % zipfname, wx.ICON_INFORMATION)
-
-                e.Skip()
-
         try:
             board = GetBoard()
         except BaseException as e:
@@ -1024,8 +1119,6 @@ class GerberZipper2():
 
 
 if __name__=='__main__':
-
-#    board.save_as('ttt.kicad_pcb', overwrite=True)
     app = wx.App()
     gerberzipper = GerberZipper2()
     gerberzipper.Run()

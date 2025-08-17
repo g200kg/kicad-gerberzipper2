@@ -1,6 +1,6 @@
 {
   "Name":"Test",
-  "Description":"Make Gerber-files/Zip Upto 8 layers, without Stencil",
+  "Description":"Make Gerber-files/Zip Upto 8 layers",
   "URL":"https://www.g200kg.com",
   "GerberDir":"Gerber",
   "ZipFilename":"*-Test.ZIP",
