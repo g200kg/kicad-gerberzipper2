@@ -16,7 +16,7 @@
             "scopes": [
                 "pcb"
             ],
-            "entrypoint": "gerberzipper2.py",
+            "entrypoint": "gerber_zipper_2_action.py",
             "icons-light": [
                 "Assets/icon24.png",
                 "Assets/icon48.png"

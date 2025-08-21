@@ -5,7 +5,7 @@ KiCad Plot&amp;Zip script plugin (IPC API)
 まだ開発中であり、充分な機能が実現されていません。
 
 * これまでの SWIG Python API ではなく KiCad で今後サポートされる IPC API および コマンドラインの kicad-cli を使用します。
-* Windows KiCad 9.0.3 でテスト。[Preferences]-[Preferences...] 内 [Plunins] タブで [Enable KiCad API] を有効にする必要があります。
+* Windows KiCad 9.0.3-9.0.4 でテスト。[Preferences]-[Preferences...] 内 [Plunins] タブで [Enable KiCad API] を有効にする必要があります。
 * KiCad の [Plugin and Content Manager] には未対応です。installtest.bat で KiCad 9.0 のプラグインディレクトリに直接インストールします。
 
 注意
@@ -21,5 +21,9 @@ SWIG 版との違い
   - "DoNotTentVias" 設定がない。この機能は PCB 全体の Via のテントをOn/Offするものだったが既に廃止。現在は Via 個別に制御できる。
   - "LineWidth" 設定がない。この設定は既に廃止されている。経緯が古すぎて良くわからない。多分 Ver 6.x の頃。
   
+Win11 24H2 KiCad 9.0.4
+KiCad 9.0 Command Prompt
+ > pip install kicad-python
+ KiCad -> Preferences -> Preferences -> Plugins -> Check Enable KiCad API
 
 
