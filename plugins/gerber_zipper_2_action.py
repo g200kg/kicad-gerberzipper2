@@ -831,7 +831,7 @@ class GerberZipper2():
                     strtab[fname] = json.load(codecs.open(fpath, 'r', 'utf-8'))
                 InitEm()
                 self.szPanel = [Em(75,9.5), Em(75,35)]
-                wx.Dialog.__init__(self, parent, id=-1, title=f'Gerber Zipper 2 (ver. {version})', style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+                wx.Dialog.__init__(self, parent, id=-1, title=f'{title} {version}', style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
                 self.panel = wx.Panel(self)
                 self.SetIcon(wx.Icon(self.icon_file_name))
 
