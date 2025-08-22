@@ -25,7 +25,7 @@ version = "2.0.0"
 chsize = (10,20)
 strtab = {}
 execDialog = None
-
+startupinfo = None
 
 layer_list = [
     {'name':'F.Cu',      'fname':'F_Cu',            'id':'F_Cu',        'fnamekey':'${filename(F.Cu)}'},
@@ -252,13 +252,13 @@ def InitEm():
     font = wx.Font(pointSize=10,family=wx.DEFAULT,style=wx.NORMAL,weight=wx.NORMAL)
     dc.SetFont(font)
     tx = dc.GetTextExtent("M")
-    chsize = (tx[0],tx[1]*1.6)
+    chsize = (tx[0],tx[1]*1.5)
 
 def SText(p, id, str, pos, size, style=wx.TE_LEFT):
     return wx.StaticText(p, id, str, pos=(pos[0],pos[1]+Em(0,0.15)[1]), size=size, style=style)
 
-def Em(x,y,dx=0,dy=0):
-    return (int(chsize[0]*x+dx), int(chsize[1]*y+dy))
+def Em(x,y):
+    return (int(chsize[0]*x), int(chsize[1]*y))
 
 def getindex(s):
     for i in range(len(layer_list)):
@@ -329,7 +329,7 @@ def tabexp(str,tabTable):
     return result
 
 def strreplace(s,d):
-    m = re.findall('\${([0-9a-zA-Z|_]*)}',s)
+    m = re.findall(r'\${([0-9a-zA-Z|_]*)}',s)
     r = {}
     v = {}
     for i in m:
@@ -479,6 +479,13 @@ class tableFile():
         else:
             self.f.close()
 
+def SubprocRun(cmd):
+    if startupinfo == None:
+        ret = subprocess.run(cmd, capture_output=True, text=True, shell=True).stdout
+    else:
+        ret = subprocess.run(cmd, capture_output=True, text=True, shell=True, startupinfo=startupinfo).stdout
+    return ret
+
 def GetBoard():
     global kicad
     try:
@@ -517,9 +524,6 @@ def GetBoard():
 def GerberExec(self, board):
     self.settings = self.Get()
     zipfiles = []
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW
-    startupinfo.wShowWindow = subprocess.SW_HIDE
 
     # Gerber
     opt = ''
@@ -550,11 +554,7 @@ def GerberExec(self, board):
         opt += '--use-drill-file-origin '
     cmd = f'kicad-cli pcb export gerbers {opt} --no-protel-ext -o {self.temp_dir} -l {lystr} {self.board_path}'
     print(f'cmd : {cmd}')
-    ret = 0
-    try:
-        ret = subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo).stdout
-    except Exception as err:
-        alert(f'error \n\n {err}')
+    ret = SubprocRun(cmd)
     for k in kylist:
         if layers[k] != '':
             fname = getfname(k)
@@ -588,7 +588,7 @@ def GerberExec(self, board):
         mext = {'PostScript':'ps','Gerber':'gbr','DXF':'dxf','SVG':'svg','PDF':'pdf'}[mapf]
     cmd = f'kicad-cli pcb export drill {opt} -o {self.temp_dir} --format excellon {self.board_path}'
     print(f'cmd : {cmd}')
-    ret = subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo).stdout
+    ret = SubprocRun(cmd)
     print(f'4:{ret}')
     if self.settings['MergePTHandNPTH']:
         renamefile(self.temp_dir, '$$$.drl', self.gerber_dir, self.settings['Drill']['Drill'].replace('*', self.basename), zipfiles)
@@ -622,9 +622,6 @@ def RefillExec(self, board):
 def DrcExec(self, board):
     print('DrcExec')
     ret = ''
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW
-    startupinfo.wShowWindow = subprocess.SW_HIDE
     opt = ''
     if self.settings.get('DrcSchematicParity',False):
         opt += '--schematic-parity '
@@ -633,8 +630,8 @@ def DrcExec(self, board):
     cmd = f'kicad-cli pcb drc {opt} -o {self.gerber_dir}/{self.basename}.rpt --format report {self.board_path}'
 #    cmd = f'kicad-cli pcb drc {opt} -o {self.gerber_dir}/{self.basename}.rpt --format json {self.board_path}'
     print(f'cmd : {cmd}')
-    ret = subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo).stdout
-    nums = re.findall(' (\d*) ', ret)
+    ret = SubprocRun(cmd)
+    nums = re.findall(r' (\d*) ', ret)
 #    print(f'nums:{nums}')
     err = 0
     for n in nums:
@@ -646,9 +643,6 @@ def DrcExec(self, board):
 
 def FabExec(self, board):
     print('FabExec')
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW
-    startupinfo.wShowWindow = subprocess.SW_HIDE
     ret = ''
     layers = ''
     fabfile = self.settings['FabFile']
@@ -657,16 +651,16 @@ def FabExec(self, board):
         layers = fabfile['TopLayers']
         cmd = f'kicad-cli pcb export pdf -o {self.gerber_dir}/{fn.replace("*",self.basename)} -l {layers} {self.board_path}'
         print(f'cmd : {cmd}')
-        res = subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo)
+        res = SubprocRun(cmd)
 #        print(f'returncode : {res.returncode}')
 #        print(f'stderr : {res.stderr}')
-        ret += res.stdout
+        ret += res
     fn = fabfile['BottomFilename']
     if fn != '':
         layers = fabfile['BottomLayers']
         cmd = f'kicad-cli pcb export pdf -o {self.gerber_dir}/{fn.replace("*",self.basename)} -l {layers} {self.board_path}'
         print(f'cmd : {cmd}')
-        ret += subprocess.run(cmd, capture_output=True, text=True, startupinfo=startupinfo).stdout
+        ret += SubprocRun(cmd)
     return {'stat':0, 'str':ret}
 
 def BomPosExec(self, board):
@@ -800,6 +794,7 @@ class GerberZipper2():
         class Dialog(wx.Dialog):
             def __init__(self, parent):
                 global strtab
+                global startupinfo
                 atexit.register(self.ClosePlugin)
                 prefix_path = os.path.join(os.path.dirname(__file__))
                 self.pluginSettings = {}
@@ -829,8 +824,12 @@ class GerberZipper2():
                 for fpath in locale_list:
                     fname = os.path.splitext(os.path.basename(fpath))[0]
                     strtab[fname] = json.load(codecs.open(fpath, 'r', 'utf-8'))
+                if hasattr(subprocess, 'STARTUPINFO'):
+                    startupinfo = subprocess.STARTUPINFO()
+                    startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW
+                    startupinfo.wShowWindow = subprocess.SW_HIDE
                 InitEm()
-                self.szPanel = [Em(75,9.5), Em(75,35)]
+                self.szPanel = [Em(75,9.5), Em(75,25)]
                 wx.Dialog.__init__(self, parent, id=-1, title=f'{title} {version}', style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
                 self.panel = wx.Panel(self)
                 self.SetIcon(wx.Icon(self.icon_file_name))
@@ -840,7 +839,7 @@ class GerberZipper2():
                     manufacturers_arr.append(item)
                 SText(self.panel, -1, 'Make Gerbers/BOM/POS/ZIP for specific PCB manufacturers. (IPC API)', pos=Em(1,0.5), size=Em(70,1))
                 SText(self.panel, -1, 'Manufacturers', pos=Em(1,1.5), size=Em(14,1), style=wx.TE_RIGHT)
-                self.manufacturers = wx.ComboBox(self.panel, -1, 'Select Manufacturers', pos=Em(16,1.5), size=Em(30,2), choices=manufacturers_arr, style=wx.CB_READONLY)
+                self.manufacturers = wx.ComboBox(self.panel, -1, 'Select Manufacturers', pos=Em(16,1.5), size=Em(30,1.5), choices=manufacturers_arr, style=wx.CB_READONLY)
 
                 SText(self.panel, -1, 'URL', pos=Em(1,3), size=Em(14,1), style=wx.TE_RIGHT)
                 self.url = wx.TextCtrl(self.panel, -1, '', pos=Em(16,3), size=Em(30,1), style=wx.TE_READONLY)
@@ -866,8 +865,8 @@ class GerberZipper2():
                 self.execbtn.Bind(wx.EVT_BUTTON, self.OnExec)
                 self.clsbtn.Bind(wx.EVT_BUTTON, self.OnClose)
 
-                self.panel2 = wx.lib.scrolledpanel.ScrolledPanel(self.panel, -1, pos=Em(0,9.5), size=Em(75,20), style=wx.BORDER_SUNKEN)
-                self.panel2.SetScrollbars(20,20,20,50)
+                self.panel2 = wx.lib.scrolledpanel.ScrolledPanel(self.panel, -1, pos=Em(0,9.5), size=Em(75,10), style=wx.BORDER_SUNKEN)
+                self.panel2.SetScrollbars(20,20,0,100)
 
                 stxt = SText(self.panel2, -1, 'DRC', style=wx.TE_CENTER, pos=Em(1,0.5), size=Em(12,1))
                 stxt.SetBackgroundColour('#c0c0d0')
@@ -904,7 +903,7 @@ class GerberZipper2():
                 self.opt_IncludeNetlistInfo = wx.CheckBox(self.panel2, -1, 'IncludeNetlistInfo', pos=Em(24, 15))
 
                 wx.StaticBox(self.panel2, -1,'Drill', pos=Em(2,18), size=Em(65,8))
-                self.drill = wx.grid.Grid(self.panel2, -1, pos=Em(3,19), size=Em(19,6,1,0))
+                self.drill = wx.grid.Grid(self.panel2, -1, pos=Em(3,19), size=Em(19,6))
                 self.drill.Bind(wx.EVT_MOUSEWHEEL, self.Ignore)
                 self.drill.DisableDragColSize()
                 self.drill.DisableDragRowSize()
@@ -945,7 +944,7 @@ class GerberZipper2():
                 stxt = SText(self.panel2, -1, 'Fab PDF', style=wx.TE_CENTER, pos=Em(1, 29.5), size=Em(12,1))
                 stxt.SetBackgroundColour('#c0c0d0')
 
-                self.fab = wx.grid.Grid(self.panel2, -1, pos=Em(3,31), size=Em(55,3,1,0))
+                self.fab = wx.grid.Grid(self.panel2, -1, pos=Em(3,31), size=Em(55,3))
                 self.fab.Bind(wx.EVT_MOUSEWHEEL, self.Ignore)
                 self.fab.DisableDragColSize()
                 self.fab.DisableDragRowSize()
@@ -969,7 +968,7 @@ class GerberZipper2():
                 stxt = SText(self.panel2, -1, 'Bom/Pos', style=wx.TE_CENTER, pos=Em(1, 34.5), size=Em(12,1))
                 stxt.SetBackgroundColour('#c0c0d0')
 
-                self.bompos = wx.grid.Grid(self.panel2, -1, pos=Em(3,36), size=Em(27,5,1,0))
+                self.bompos = wx.grid.Grid(self.panel2, -1, pos=Em(3,36), size=Em(27,5))
                 self.bompos.Bind(wx.EVT_MOUSEWHEEL, self.Ignore)
                 self.bompos.DisableDragColSize()
                 self.bompos.DisableDragRowSize()
@@ -994,10 +993,11 @@ class GerberZipper2():
                 SText(self.panel2, -1, 'The changes here are temporary. If you want to change it permanently edit the corresponding json file', pos=Em(2,42), size=Em(80,1))
                 self.Bind(wx.EVT_SIZE, self.OnSize)
                 self.Bind(wx.EVT_CHECKBOX, self.OnCheck)
-                rct = self.pluginSettings.get("Recent", False)
-                if rct in self.pluginSettings.get("Recent", []):
-                    self.manufacturers.SetStringSelection(rct)
+                rct = self.pluginSettings.get("Recent", None)
+                print(f'rct:{rct}')
+                if rct != None:
                     self.Select(rct)
+                    self.manufacturers.SetSelection(self.manufacturers.FindString(rct))
                 self.opt_RefillExec.SetValue(self.pluginSettings.get('RefillExec',True))
                 self.opt_DrcExec.SetValue(self.pluginSettings.get('DrcExec', True))
                 self.opt_FabExec.SetValue(self.pluginSettings.get('FabExec', True))
@@ -1005,6 +1005,7 @@ class GerberZipper2():
 
             def Ignore(self, e):
                 wx.PostEvent(self.panel2.GetEventHandler(), e)
+#                wx.PostEvent(self.panel2, e)
 
             def ClosePlugin(self):
                 json.dump(self.pluginSettings, open(self.settings_fname, "w"), indent=4)
@@ -1158,10 +1159,10 @@ class GerberZipper2():
                 self.settings = default_settings
                 if(name in self.json_data):
                     self.settings = self.json_data[name]
-                else:
-                    for k in self.json_data.keys():
-                        self.settings = self.json_data[k]
-                        break
+#                else:
+#                    for k in self.json_data.keys():
+#                        self.settings = self.json_data[k]
+#                        break
                 prefix_path = os.path.join(os.path.dirname(__file__))
                 self.pluginSettings['Recent'] = name
                 self.label.SetLabel(self.settings.get('Description', ''))
@@ -1176,9 +1177,10 @@ class GerberZipper2():
                 except Exception as err:
                     alert(f'eror \n\n {err}', wx.ICON_ERROR)
                 self.work_dir = doc[0].project.path
+
 #                self.work_dir = os.path.dirname(__file__)
                 self.temp_dir = os.path.join(self.work_dir, 'temp')
-                self.board_path = os.path.join(self.temp_dir, '$$$.kicad_pcb')
+                self.board_path = os.path.join(self.temp_dir, '__pcb__.kicad_pcb')
                 self.basename = os.path.splitext(os.path.basename(board.name))[0]
                 self.gerber_dir = os.path.join(self.work_dir, self.gerberdir.GetValue())
                 if not os.path.exists(self.gerber_dir):
@@ -1193,8 +1195,18 @@ class GerberZipper2():
 
             def OnDetail(self, e):
                 if self.detailbtn.GetValue():
+                    print(f'SetClientSize:{self.szPanel[1][0]}, {self.szPanel[1][1]}')
+                    self.panel2.Scroll(0,0)
+                    self.panel2.Refresh()
+                    self.panel2.Update()
+                    self.panel2.Show()
                     self.SetClientSize(wx.Size(self.szPanel[1][0], self.szPanel[1][1]))
                 else:
+                    print(f'SetClientSize:{self.szPanel[0][0]}, {self.szPanel[0][1]}')
+                    self.panel2.Scroll(0,0)
+                    self.panel2.Refresh()
+                    self.panel2.Update()
+                    self.panel2.Hide()
                     self.SetClientSize(wx.Size(self.szPanel[0][0], self.szPanel[0][1]))
                 if e:
                     e.Skip()

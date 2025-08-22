@@ -1,7 +1,7 @@
 {
-    "Recent": "Elecrow",
+    "Recent": "JLCPCB",
     "RefillExec": true,
-    "DrcExec": true,
+    "DrcExec": false,
     "FabExec": true,
     "BomPosExec": true
 }
