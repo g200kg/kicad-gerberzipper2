@@ -33,6 +33,7 @@ KiCad 9.0 Command Prompt
 
 ## History  
 
+2.0.2 Fix temp filename  
 2.0.1 Fix Mac/Ubuntu GUI, PCM related issues  
-2.0.0 First release
+2.0.0 First release  
 

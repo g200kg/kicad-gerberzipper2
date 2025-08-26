@@ -22,7 +22,7 @@ from kipy.proto.common.types import base_types_pb2, DocumentType, DocumentSpecif
 
 
 title = "GerberZipper2(Beta)"
-version = "2.0.1"
+version = "2.0.2"
 chsize = (10,20)
 strtab = {}
 mainDialog = None
