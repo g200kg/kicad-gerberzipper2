@@ -30,6 +30,7 @@ execDialog = None
 board = None
 startupinfo = None
 kicadcli_path = ''
+temp_basename = '__PCB__'
 
 layer_list = [
     {'name':'F.Cu',      'fname':'F_Cu',            'id':'F_Cu',        'fnamekey':'${filename(F.Cu)}'},
@@ -582,7 +583,7 @@ def GerberExec(self, board):
     for k in kylist:
         if layers[k] != '':
             fname = getfname(k)
-            renamefile(self.temp_dir, f'$$$-{fname}.gbr', self.gerber_dir, f'{layers[k].replace("*",self.basename)}', zipfiles)
+            renamefile(self.temp_dir, f'{temp_basename}-{fname}.gbr', self.gerber_dir, f'{layers[k].replace("*",self.basename)}', zipfiles)
 
     # Drill
     opt = ''
@@ -615,16 +616,16 @@ def GerberExec(self, board):
     ret = SubprocRun(cmd)
     print(f'4:{ret}')
     if self.settings['MergePTHandNPTH']:
-        renamefile(self.temp_dir, '$$$.drl', self.gerber_dir, self.settings['Drill']['Drill'].replace('*', self.basename), zipfiles)
+        renamefile(self.temp_dir, f'{temp_basename}.drl', self.gerber_dir, self.settings['Drill']['Drill'].replace('*', self.basename), zipfiles)
         if self.settings['Drill']['DrillMap'] != '':
-            renamefile(self.temp_dir, f'$$$-drl_map.{mext}', self.gerber_dir, self.settings['Drill']['DrillMap'].replace('*', self.basename), zipfiles)
+            renamefile(self.temp_dir, f'{temp_basename}-drl_map.{mext}', self.gerber_dir, self.settings['Drill']['DrillMap'].replace('*', self.basename), zipfiles)
     else:
-        renamefile(self.temp_dir, '$$$-PTH.drl', self.gerber_dir, self.settings['Drill']['Drill'].replace('*', self.basename), zipfiles)
-        renamefile(self.temp_dir, '$$$-NPTH.drl', self.gerber_dir, self.settings['Drill']['NPTH'].replace('*', self.basename), zipfiles)
+        renamefile(self.temp_dir, f'{temp_basename}-PTH.drl', self.gerber_dir, self.settings['Drill']['Drill'].replace('*', self.basename), zipfiles)
+        renamefile(self.temp_dir, f'{temp_basename}-NPTH.drl', self.gerber_dir, self.settings['Drill']['NPTH'].replace('*', self.basename), zipfiles)
         if self.settings['Drill']['DrillMap'] != '':
-            renamefile(self.temp_dir, f'$$$-PTH-drl_map.{mext}', self.gerber_dir, self.settings['Drill']['DrillMap'].replace('*', self.basename), zipfiles)
+            renamefile(self.temp_dir, f'{temp_basename}-PTH-drl_map.{mext}', self.gerber_dir, self.settings['Drill']['DrillMap'].replace('*', self.basename), zipfiles)
         if self.settings['Drill']['NPTHMap'] != '':
-            renamefile(self.temp_dir, f'$$$-NPTH-drl_map.{mext}', self.gerber_dir, self.settings['Drill']['NPTHMap'].replace('*', self.basename), zipfiles)
+            renamefile(self.temp_dir, f'{temp_basename}-NPTH-drl_map.{mext}', self.gerber_dir, self.settings['Drill']['NPTHMap'].replace('*', self.basename), zipfiles)
 
     # Zip
     zipfname = f'{self.gerber_dir}/{self.zipfilename.GetValue().replace("*",self.basename)}'

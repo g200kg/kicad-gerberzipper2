@@ -23,7 +23,7 @@ SWIG 版との違い
   - "DoNotTentVias" 設定がない。この機能は PCB 全体の Via のテントをOn/Offするものだったが既に廃止。現在は Via 個別に制御できる。
   - "LineWidth" 設定がない。この設定は既に廃止されている。経緯が古すぎて良くわからない。多分 Ver 6.x の頃。
 
-確認環境  
+## 確認環境  
 
 Win11 24H2 KiCad 9.0.4  
 
@@ -31,6 +31,8 @@ KiCad 9.0 Command Prompt
 > \> pip install kicad-python  
 > KiCad menu -> [Preferences] -> [Preferences] -> Plugins -> Check Enable KiCad API
 
-2.0.1 Fix Mac/Ubuntu GUI, PCM related issues
+## History  
+
+2.0.1 Fix Mac/Ubuntu GUI, PCM related issues  
 2.0.0 First release
 
