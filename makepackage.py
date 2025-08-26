@@ -4,7 +4,7 @@ def addfile(zf, file):
     print(file)
     zf.write(file, file)
 
-with zipfile.ZipFile('pcmpackage.zip', 'w', compression=zipfile.ZIP_DEFLATED) as zf:
+with zipfile.ZipFile('pcmpackage-gerberzipper2.zip', 'w', compression=zipfile.ZIP_DEFLATED) as zf:
     addfile(zf, 'metadata.json')
     addfile(zf, 'resources/icon.png')
     addfile(zf, 'plugins/gerber_zipper_2_action.py')
@@ -22,4 +22,4 @@ with zipfile.ZipFile('pcmpackage.zip', 'w', compression=zipfile.ZIP_DEFLATED) as
     for file in files:
         if file.find('Test') != 0:
             addfile(zf, 'plugins/Assets/' + file)
-    print('pcmpackage.zip complete')
+    print('pcmpackage-gerberzipper2.zip complete')

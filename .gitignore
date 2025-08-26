@@ -2,6 +2,7 @@ temp/
 Gerber/
 settings.json
 test*.*
+plugins/Test/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

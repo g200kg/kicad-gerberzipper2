@@ -18,8 +18,7 @@
             ],
             "entrypoint": "gerber_zipper_2_action.py",
             "icons-light": [
-                "Assets/icon24.png",
-                "Assets/icon48.png"
+                "Assets/icon24.png"
             ]
         }
     ]

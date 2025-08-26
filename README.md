@@ -31,4 +31,6 @@ KiCad 9.0 Command Prompt
 > \> pip install kicad-python  
 > KiCad menu -> [Preferences] -> [Preferences] -> Plugins -> Check Enable KiCad API
 
+2.0.1 Fix Mac/Ubuntu GUI, PCM related issues
+2.0.0 First release
 
