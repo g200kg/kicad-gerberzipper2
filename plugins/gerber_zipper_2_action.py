@@ -22,7 +22,7 @@ from kipy.proto.common.types import base_types_pb2, DocumentType, DocumentSpecif
 
 
 title = "GerberZipper2(Beta)"
-version = "2.0.2"
+version = "2.0.3"
 chsize = (10,20)
 strtab = {}
 mainDialog = None
@@ -145,13 +145,20 @@ default_settings = {
   }
 }
 
+class RedirectText(object):
+    def __init__(self, text_ctrl):
+        self.out = text_ctrl
+    def write(self, string):
+        wx.CallAfter(self.out.WriteText, string)
+    def flush(self):
+        pass
+
 class ExecDialog(wx.Dialog):
     def __init__(self, parent):
-#        alert(f'{self}, {parent}')
         wx.Dialog.__init__(self, parent, -1, f'{title} Exec', style=wx.CAPTION|wx.STAY_ON_TOP)
-        self.SetClientSize(Em(60,20))
+        self.SetClientSize(Em(82,20))
         panel = wx.Panel(self)
-        self.text = wx.TextCtrl(panel, -1, style=wx.TE_MULTILINE, pos=Em(1,1),size=Em(58,16))
+        self.text = wx.TextCtrl(panel, -1, style=wx.TE_MULTILINE, pos=Em(1,1),size=Em(80,16))
         self.button = wx.Button(panel, wx.ID_OK, "Close", pos=Em(5,18),size=Em(10,1.5))
         self.button.Hide()
         self.button.Bind(wx.EVT_BUTTON,self.OnClose)
@@ -159,21 +166,26 @@ class ExecDialog(wx.Dialog):
         self.board = board
         self.parent = parent
         self.Show()
+        self.redirect = RedirectText(self.text)
+        self.ignore = open(os.devnull, 'w')
+        sys.stdout = self.redirect
         self.step = 0
         self.report = 'Start\n'
         self.Progress()
+    def Cprint(self, val):
+        self.EnableRedirect(1)
+        print(val)
+        self.EnableRedirect(0)
+    def EnableRedirect(self, f):
+        if f:
+            sys.stdout = self.redirect
+        else:
+            sys.stdout = self.ignore
     def Progress(self):
-        self.text.SetValue(self.report)
-        self.text.ShowPosition(self.text.GetLastPosition())
-        self.Refresh()
-        self.Update()
-        self.Raise()
-        self.SetFocus()
         self.step += 1
         wx.CallLater(300, self.Exec)
     def OnClose(self, e):
         global execDialog
-        print('ExecDialog.Close')
         self.EndModal(0)
         self.Destroy()
         execDialog = None
@@ -184,79 +196,69 @@ class ExecDialog(wx.Dialog):
     def Exec(self):
         try:
             if self.step == 1:
-                self.report += '\n--- Prepare ---\n'
                 self.Progress()
             elif self.step == 2:
+                self.Cprint('\n--- Prepare ---')
                 self.parent.PrepareDirs()
                 self.board.save_as(self.parent.board_path, overwrite = True, include_project = False)
-                self.report += '\nDone\n\n--- Refill ---\n'
+                self.Cprint('Done\n')
                 self.Progress()
             elif self.step == 3:
+                self.Cprint('\n--- Refill ---')
                 if self.parent.pluginSettings['RefillExec']:
                     ret = RefillExec(self.parent, self.board)
-                    print(ret)
-                    self.report += ret['str']
+                    self.Cprint(ret['str'])
                     if ret['stat'] > 0:
                         raise
                 else:
-                    self.report += 'Skip\n'
-                self.report += '\n--- DRC ---\n'
+                    self.Cprint('Skip\n')
                 self.Progress()
             elif self.step == 4:
+                self.Cprint('\n--- DRC ---')
                 if self.parent.pluginSettings['DrcExec']:
                     ret = DrcExec(self.parent, self.board)
-#                    alert(f'Drc:{ret}')
-                    self.report += ret['str']
+                    self.Cprint(ret['str'])
                     if ret['stat'] > 0:
-                        raise Exception(f'DRC Error : {ret["str"]}')
+                        raise Exception(f'DRC Error : \n{ret["str"]}')
                 else:
-                    self.report += 'Skip\n'
-                self.report += '\n--- Gerber ---\n'
+                    self.Cprint('Skip\n')
                 self.Progress()
             elif self.step == 5:
+                self.Cprint('\n--- Gerber ---')
                 ret = GerberExec(self.parent, self.board)
-                self.report += ret['str']
+                self.Cprint(ret['str'])
                 if ret['stat'] > 0:
                     raise
-                self.report += '\n--- Fab ---\n'
                 self.Progress()
             elif self.step ==6:
+                self.Cprint('\n--- Fab ---')
                 if(self.parent.pluginSettings['FabExec']):
                     ret = FabExec(self.parent, self.board)
-                    print(ret)
-                    self.report += ret['str']
+                    self.Cprint(ret['str'])
                     if ret['stat'] > 0:
                         raise
                 else:
-                    self.report += 'Skip\n'
-                self.report += '\n--- Bom/Pos ---\n'
+                    self.Cprint('Skip\n')
                 self.Progress()
             elif self.step == 7:
+                self.Cprint('\n--- Bom/Pos ---')
                 if(self.parent.pluginSettings['BomPosExec']):
                     ret = BomPosExec(self.parent, self.board)
-                    self.report += ret['str']
+                    self.Cprint(ret['str'])
                     if ret['stat'] > 0:
                         raise
                 else:
-                    self.report += 'Skip\n'
+                    self.Cprint('Skip\n')
                 self.Progress()
             elif self.step == 8:
-                self.report += '\n\nComplete\n\n'
-#                shutil.rmtree(self.parent.temp_dir)
+                self.Cprint('\n\nComplete\n')
                 self.Complete(0)
                 self.Progress()
         except Exception as e:
+            self.Cprint('\nAborted\n')
             alert(str(e), wx.ICON_ERROR)
             self.Complete(1)
-#    self.Exec()
-#    self.ShowModal()
-#    self.Destroy()
 
-#def ExecProgress(self, s, icon=0):
-#    if self.FindWindowByName(f'{title} Exec') is None:
-#        return ExecDialog()
-#    else:
-#        return None
 
 def alert(s, icon=0):
     dialog = wx.MessageDialog(None, s, f'{title}', icon)
@@ -272,7 +274,6 @@ def InitEm():
     chsize = (tx[0],tx[1]*1.6)
     if sys.platform == 'darwin':
         chsize = (tx[0],tx[1]*3)
-#        alert(f'chsize:{chsize}\nsys.platform:{sys.platform}')
 
 def SText(p, id, str, pos, size, style=wx.TE_LEFT):
     return wx.StaticText(p, id, str, pos=(pos[0],pos[1]+Em(0,0.15)[1]), size=size, style=style)
@@ -396,8 +397,7 @@ class tableFile():
             try:
                 self.f = open(fn, mode='w', encoding='utf-8')
             except Exception as err:
-                alert(f'File creation error \n\n File : {fn}\n', wx.ICON_ERROR)
-                raise
+                raise Exception(f'File Creation Error : \n{err}')
         elif fn.endswith('.xlsx'):
             self.xlsxReady = 1
             try:
@@ -411,14 +411,12 @@ class tableFile():
                 try:
                     self.f = open(self.fname, mode='w', encoding='utf-8')
                 except Exception as err:
-                    alert(f'File creation eror \n\n File : {fn}\n', wx.ICON_ERROR)
-                    raise
+                    raise Exception(f'File Creation Error : \n{err}')
             else:
                 try:
                     self.f = open(self.fname, mode='w', encoding='utf-8')
                 except Exception as err:
-                    alert(f'File creation eror \n\n File : {fn}\n', wx.ICON_ERROR)
-                    raise
+                    raise Exception(f'File Creation Error : \n{err}')
                 self.f.close()
                 self.xlsx = xlsxwriter.Workbook(self.fname)
                 self.sheet = self.xlsx.add_worksheet('Sheet1')
@@ -526,19 +524,6 @@ def GetBoard():
             print("KiCad version and kicad-python version match :)")
     except BaseException as e:
         print(f"{e}")
-#    print('test')
-#    print(DocumentType.items())
-#    print('\n')
-#    d = kicad.get_open_documents(DocumentType.DOCTYPE_UNKNOWN)
-#    d = kicad.get_open_documents(DocumentType.DOCTYPE_PCB)
-#    d = kicad.get_open_documents(DocumentType.DOCTYPE_SCHEMATIC)
-#    d = kicad.get_open_documents(DocumentType.DOCTYPE_PROJECT)
-#    print(d)
-#    print(DocumentType.items())
-#    print('get_open_documents ok')
-#    print(f'type:{type(d)}')
-#    print(f'd:{d}')
-#    exit()
     try:
         board = kicad.get_board()
     except BaseException as e:
@@ -653,13 +638,9 @@ def DrcExec(self, board):
     if self.settings.get('DrcAllTrackErrors',False):
         opt += '--all-track-errors '
     cmd = f'"{kicadcli_path}" pcb drc {opt} -o {self.gerber_dir}/{self.basename}.rpt --format report {self.board_path}'
-#    cmd = f'kicad-cli pcb drc {opt} -o {self.gerber_dir}/{self.basename}.rpt --format json {self.board_path}'
-#    alert(f'cmd:{cmd}')
-    print(f'cmd : {cmd}')
+#    print(f'cmd : {cmd}')
     ret = SubprocRun(cmd)
-#    alert(f'ret:{ret}')
     nums = re.findall(r' (\d*) ', ret)
-#    print(f'nums:{nums}')
     err = 0
     for n in nums:
         if int(n) > 0:
@@ -669,7 +650,6 @@ def DrcExec(self, board):
     return r
 
 def FabExec(self, board):
-    print('FabExec')
     ret = ''
     layers = ''
     fabfile = self.settings['FabFile']
@@ -677,16 +657,12 @@ def FabExec(self, board):
     if fn != '':
         layers = fabfile['TopLayers']
         cmd = f'"{kicadcli_path}" pcb export pdf -o {self.gerber_dir}/{fn.replace("*",self.basename)} -l {layers} {self.board_path}'
-        print(f'cmd : {cmd}')
         res = SubprocRun(cmd)
-#        print(f'returncode : {res.returncode}')
-#        print(f'stderr : {res.stderr}')
         ret += res
     fn = fabfile['BottomFilename']
     if fn != '':
         layers = fabfile['BottomLayers']
         cmd = f'"{kicadcli_path}" pcb export pdf -o {self.gerber_dir}/{fn.replace("*",self.basename)} -l {layers} {self.board_path}'
-        print(f'cmd : {cmd}')
         ret += SubprocRun(cmd)
     return {'stat':0, 'str':ret}
 
@@ -704,10 +680,15 @@ def BomPosExec(self, board):
         bom_fnameT = f'{self.gerber_dir}/{fnameT.replace("*", self.basename)}'
     if len(fnameB)>0 and not bomParam.get('MergeSide'):
         bom_fnameB = f'{self.gerber_dir}/{fnameB.replace("*", self.basename)}'
-    print('Top.BOM:'+bom_fnameT+'\nBottom.BOM:'+bom_fnameB)
+#    print('Top.BOM:'+bom_fnameT+'\nBottom.BOM:'+bom_fnameB)
     bomList = [{},{}]
     for fp in board.get_footprints():
+#        execDialog.Cprint(fp.texts_and_fields)
         val = fp.value_field.text.value
+        dic = {}
+        for field in fp.texts_and_fields:
+            if hasattr(field, 'text'):
+                dic[field.name] = field.text.value
         ref = fp.reference_field.text.value
         pak = fp.definition.id.name
         layer = 0 if fp.layer == BoardLayer.BL_F_Cu else 1
@@ -717,15 +698,23 @@ def BomPosExec(self, board):
         dnp = fp.attributes.do_not_populate
         exbom = fp.attributes.exclude_from_bill_of_materials
         expos = fp.attributes.exclude_from_position_files
-        if mount == 'SMD' or (mount == 'Through hole' and bomParam.get('IncludeTHT')):
+        if (not dnp and not exbom) and (mount == 'SMD' or (mount == 'Through hole' and bomParam.get('IncludeTHT'))):
             if bomParam.get('MergeSide'):
                 layer = 0
+            o = {'val':val, 'ref':ref, 'fp':pak, 'type':mount, 'side':side, 'side1':side1}
+            o.update(dic)
             if val in bomList[layer]:
                 bomList[layer][val]['ref'] += ',' + ref
                 bomList[layer][val]['qty'] += 1
+                if 'PN' in o and 'PN' in bomList[layer][val] and o['PN'] != bomList[layer][val]['PN']:
+                    raise Exception(f'PN Error : \n{ref}:{o["PN"]} {bomList[layer][val]["ref"]}:{bomList[layer][val]["PN"]}')
+                if 'LCSC' in o and 'LCSC' in bomList[layer][val] and o['LCSC'] != bomList[layer][val]['LCSC']:
+                    raise Exception(f'LCSC Error : \n{ref}:{o["LCSC"]} {bomList[layer][val]["ref"]}:{bomList[layer][val]["LCSC"]}')
+                for f in o:
+                    bomList[layer][val].setdefault(f, o[f])
             else:
-                bomList[layer][val] = {'val':val, 'ref':ref, 'fp':pak, 'qty':1, 'type':mount, 'side':side, 'side1':side1}
-                bomList[layer][val].update(getsubkey(val))
+                bomList[layer][val] = o
+                bomList[layer][val]['qty'] = 1
     rowformat = bomParam.get('Row')
     header = bomParam.get('Header','')
     if len(bom_fnameT)>0:
@@ -770,13 +759,13 @@ def BomPosExec(self, board):
             tfPosBottom = tableFile(pos_fnameB)
             tfPosBottom.setTabs(posParam.get('Tabs'))
             tfPosBottom.addLine(posParam.get('Header'), {'side':'Bottom'}, 'Header')
-        print('Top.POS:'+pos_fnameT+'\nBottom.POS:'+pos_fnameB)
+#        print('Top.POS:'+pos_fnameT+'\nBottom.POS:'+pos_fnameB)
         origin = board.get_origin(2)    # drill-origin
         if not self.settings['UseAuxOrigin']:
             origin.x = 0
             origin.y = 0
-        print(f'origin : {origin}')
         rowformat = posParam.get('Row')
+        nn = 0
         for fp in board.get_footprints():
             val = fp.value_field.text.value
             ref = fp.reference_field.text.value
@@ -790,8 +779,8 @@ def BomPosExec(self, board):
             dnp = fp.attributes.do_not_populate
             exbom = fp.attributes.exclude_from_bill_of_materials
             expos = fp.attributes.exclude_from_position_files
-            print(f'FP : {ref} : {pos} {rot} {side} {mount} {pak}')
-            if mount == 'SMD' or (mount == 'Through hole' and posParam.get('IncludeTHT')):
+            s = f'FP : {ref} : {pos} {rot} {side} {mount} {pak}'
+            if (not dnp and not expos) and (mount == 'SMD' or (mount == 'Through hole' and posParam.get('IncludeTHT'))):
                 dict = {'val':val, 'ref':ref, 'x':pos.x-origin.x, 'y':pos.y-origin.y, 'fp':pak, 'type':mount, 'side':side, 'side1':side1, 'rot':rot}
 #                        dict.update(subkey)
                 row = strreplace(rowformat, dict)
@@ -804,7 +793,6 @@ def BomPosExec(self, board):
                 else:
                     if tfPosBottom != None:
                         tfPosBottom.addLine(rowformat, dict, 'Body')
-
         if tfPosTop != None:
             tfPosTop.addLine(posParam.get('Footer'), {'side':'top'}, 'Body')
             tfPosTop.close()
@@ -812,6 +800,8 @@ def BomPosExec(self, board):
             tfPosBottom.addLine(posParam.get('Footer'), {'side':'bottom'}, 'Body')
             tfPosBottom.close()
     except Exception as e:
+        alert('pos err')
+        alert(e)
         print(e)
         return {'stat':1, 'str':''}
     return {'stat':0, 'str':f'BomTop:{bom_fnameT}\nBomBottom:{bom_fnameB}\nPosTop:{pos_fnameT}\nPosBottom:{pos_fnameB}\nDone'}
@@ -1078,13 +1068,11 @@ class GerberZipper2():
                     shutil.rmtree(self.temp_dir)
 
             def OnSize(self, e):
-#                print("OnSize")
                 self.clSize = self.GetClientSize()
                 self.panel.SetSize(self.clSize.x, self.clSize.y)
                 self.panel2.SetSize(self.clSize.x, self.clSize.y - Em(0,10)[1])
 
             def OnCheck(self, e):
-#                print('OnCheck')
                 self.pluginSettings['RefillExec'] = self.opt_RefillExec.GetValue()
                 self.pluginSettings['DrcExec'] = self.opt_DrcExec.GetValue()
                 self.pluginSettings['FabExec'] = self.opt_FabExec.GetValue()
@@ -1226,10 +1214,6 @@ class GerberZipper2():
                 self.settings = default_settings
                 if(name in self.json_data):
                     self.settings = self.json_data[name]
-#                else:
-#                    for k in self.json_data.keys():
-#                        self.settings = self.json_data[k]
-#                        break
                 prefix_path = os.path.join(os.path.dirname(__file__))
                 self.pluginSettings['Recent'] = name
                 self.label.SetLabel(self.settings.get('Description', ''))
@@ -1239,19 +1223,11 @@ class GerberZipper2():
                 self.Set(self.settings)
 
             def PrepareDirs(self):
-#                try:
-#                    doc = kicad.get_open_documents(DocumentType.DOCTYPE_PCB)
-#                except Exception as err:
-#                    alert(f'eror \n\n {err}', wx.ICON_ERROR)
-#                self.work_dir = doc[0].project.path
-#                self.temp_dir = os.path.join(self.work_dir, 'gerberzipper_temp')
                 self.board_path = os.path.join(self.temp_dir, '__pcb__.kicad_pcb')
                 self.basename = os.path.splitext(os.path.basename(board.name))[0]
                 self.gerber_dir = os.path.join(self.work_dir, self.gerberdir.GetValue())
                 if not os.path.exists(self.gerber_dir):
                     os.makedirs(self.gerber_dir)
-#                if not os.path.exists(self.temp_dir):
-#                    os.makedirs(self.temp_dir)
 
             def OnManufacturers(self,e):
                 obj = e.GetEventObject()

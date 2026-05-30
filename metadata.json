@@ -27,14 +27,15 @@
     "license":"MIT",
     "versions":[
         {
-            "kicad_version": "9.0",
+            "kicad_version": "10.0",
+            "runtime": "ipc",
             "platforms": [
                 "linux",
                 "macos",
                 "windows"
             ],
             "status": "development",
-            "version": "2.0.2"
+            "version": "2.0.3"
         }
     ]
 }

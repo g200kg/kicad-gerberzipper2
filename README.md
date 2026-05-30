@@ -25,14 +25,15 @@ SWIG 版との違い
 
 ## 確認環境  
 
-Win11 24H2 KiCad 9.0.4  
+Win11 KiCad 10.0.3  
 
-KiCad 9.0 Command Prompt  
+KiCad 10.0.3 Command Prompt  
 > \> pip install kicad-python  
 > KiCad menu -> [Preferences] -> [Preferences] -> Plugins -> Check Enable KiCad API
 
 ## History  
 
+2.0.3 Update metadata for IPC plugin / Fixed minor bugs
 2.0.2 Fix temp filename  
 2.0.1 Fix Mac/Ubuntu GUI, PCM related issues  
 2.0.0 First release  

@@ -1,8 +1,8 @@
-# kicad-gerberzipper リポジトリ
+# kicad-gerberzipper2 リポジトリ
 
 ## バージョンの更新
-	gerber_zipper_2_action.py line 23
-	metadata.json line 37
+	gerber_zipper_2_action.py line 25
+	metadata.json line 38
 	README.md #### Note / #### 注
 
 ## PCMパッケージ作成
