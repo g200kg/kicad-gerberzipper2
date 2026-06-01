@@ -2,20 +2,19 @@
 KiCad Plot&amp;Zip script plugin (IPC API)
 
 これは GerberZipper の IPC API 対応版です。
-まだ開発中であり、充分な機能が実現されていません。
+まだ開発中であり、一部の機能が実現されていません。
 
 * これまでの SWIG Python API ではなく KiCad で今後サポートされる IPC API および コマンドラインの kicad-cli を使用します。
-* Windows KiCad 9.0.3-9.0.4 でテスト。[Preferences]-[Preferences...] 内 [Plunins] タブで [Enable KiCad API] を有効にする必要があります。
-* KiCad の [Plugin and Content Manager] には未対応です。installtest.bat で KiCad 9.0 のプラグインディレクトリに直接インストールします(Windows の場合)
+* Windows KiCad 10.0.3 でテスト。[Preferences]-[Preferences...] 内 [Plunins] タブで [Enable KiCad API] を有効にする必要があります。
 
 注意
 * 今までのプラグインとは違い IPC プラグインは KiCad 本体とは別のプロセスになります。そのため、KiCad のインスタンスとの対応関係がうまく取れなくなるので、今のところは KiCad の PCB エディタを1つだけ起動している状態でプラグインを起動して使用する事が前提となります。また、開く PCB は KiCad で開いているプロジェクトファイルと対応が取れている事が必要です。
 
 SWIG 版との違い
-* DRC 連携
-* Fab PDF 出力
+* DRC 連携の追加
+* Fab PDF 出力の追加
 * IPC API の制限により、詳細の動作が異なります
-  -  IPC API から KiCad 本体の言語設定を取得する機能がないため言語が固定。
+  -  言語設定は'Default'か'日本語'のみ動作を確認。
   -  ドリルレポートファイル (*.rpt) 作成機能がない。
   - "ForcePlotInvisible" 設定がない。この機能は KiCad 本体からも 9.0.1 以降で削除される。
   - "ExcludeEdgeLayer" 設定がない。この機能は KiCad 本体で既に廃止。最近の KiCad は同等以上の柔軟性のある"PlotOnAllLayers"がある。
@@ -33,6 +32,7 @@ KiCad 10.0.3 Command Prompt
 
 ## History  
 
+2.0.4 Fix bug about language setting
 2.0.3 Update metadata for IPC plugin / Fixed minor bugs
 2.0.2 Fix temp filename  
 2.0.1 Fix Mac/Ubuntu GUI, PCM related issues  
