@@ -1,6 +1,6 @@
 {
   "LABEL":"Erzeuge Gerber-Dateien und ZIP-Datei für bestimmte Hersteller.",
-  "MENUFACTURERS":"Hersteller/Vorgabe",
+  "MANUFACTURER":"Hersteller/Vorgabe",
   "URL":"URL",
   "GERBERDIR":"Gerber Ordner",
   "ZIPFNAME":"ZIP Dateiname",

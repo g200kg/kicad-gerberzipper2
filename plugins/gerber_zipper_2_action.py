@@ -15,19 +15,19 @@ import subprocess
 import glob
 import atexit
 import shutil
-import codecs
 import inspect
 import traceback
 from kipy import KiCad
 from kipy.proto.board.board_types_pb2 import BoardLayer
 from kipy.proto.common.types import base_types_pb2, DocumentType, DocumentSpecifier
 
+import VERSION
+title = "GerberZipper2"
 
-title = "GerberZipper2(Beta)"
-version = "2.0.4"
 lang = "default"
 chsize = (10,20)
 strtab = {}
+stxttab = {}
 mainDialog = None
 execDialog = None
 board = None
@@ -258,11 +258,40 @@ class ExecDialog(wx.Dialog):
                 self.Progress()
         except Exception as e:
             self.Cprint('\nAborted\n')
-            alert(str(e), wx.ICON_ERROR)
+            alert(str(e), wx.ICON_EXCLAMATION)
             self.Complete(1)
 
+class CustomMessageDialog(wx.Dialog):
+    def __init__(self, parent, title, message, flag, size):
+        super().__init__(parent, title=title, size=size)
+        ico=wx.Icon('Assets/icon.png', wx.BITMAP_TYPE_PNG)
+        self.SetIcon(ico)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        self.msg_text = wx.StaticText(self, label=message)
+        vbox.Add(self.msg_text, proportion=1, flag=wx.ALL | wx.EXPAND, border=20)
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        okbtn = wx.Button(self, wx.ID_OK, label="OK")
+        btn_sizer.Add(okbtn, flag=wx.ALL, border=5)
+        okbtn.Bind(wx.EVT_BUTTON, self.OnOk)
+        if flag & wx.CANCEL:
+            cancelbtn = wx.Button(self, wx.CANCEL, label="Cancel")
+            btn_sizer.Add(cancelbtn, flag=wx.ALL, border=5)
+            cancelbtn.Bind(wx.EVT_BUTTON, self.OnCancel)
+        vbox.Add(btn_sizer, flag=wx.ALIGN_CENTER | wx.BOTTOM, border=10)
+        self.SetSizer(vbox)
+    def OnOk(self, event):
+        self.EndModal(wx.OK)
+    def OnCancel(self, event):
+        self.EndModal(wx.CANCEL)
 
-def alert(s, icon=0):
+def alert(s, flag=0, size=(650,240)):
+    dlg = CustomMessageDialog(None, f'{title}', s, flag, size)
+    wx.Bell()
+    r = dlg.ShowModal()
+    dlg.Destroy()
+    return r
+
+def alert2(s, icon=0):
     dialog = wx.MessageDialog(None, s, f'{title}', icon)
     r = dialog.ShowModal()
     return r
@@ -498,9 +527,9 @@ class tableFile():
 
 def SubprocRun(cmd):
     if startupinfo is None:
-        ret = subprocess.run(cmd, text=False, capture_output=True)
+        ret = subprocess.run(cmd, text=False, capture_output=True, shell=True)
     else:
-        ret = subprocess.run(cmd, text=False, capture_output=True, startupinfo=startupinfo)
+        ret = subprocess.run(cmd, text=False, capture_output=True, shell=True, startupinfo=startupinfo)
     try:
         txt = ret.stdout.decode('utf-8')
     except Exception:
@@ -824,6 +853,7 @@ class GerberZipper2():
                 global kicadcli_path
                 global redirect_ignore
                 global lang
+                global stxttab
 
                 redirect_ignore = open(os.devnull, 'w')
                 kicadcli_path = kicad.get_kicad_binary_path('kicad-cli')
@@ -838,7 +868,7 @@ class GerberZipper2():
                 self.temp_dir = os.path.join(self.work_dir, '~gerberzipper_temp')
                 print(f'temp_dir:{self.temp_dir}')
                 if os.path.exists(self.temp_dir):
-                    if alert('It may already be running. Run anyway?', wx.OK|wx.CANCEL) == wx.ID_CANCEL:
+                    if alert('It may already be running. Run anyway?', wx.CANCEL|wx.ICON_EXCLAMATION, size=(400,150)) == wx.CANCEL:
                         exit(0)
                 else:
                     os.makedirs(self.temp_dir)
@@ -848,8 +878,8 @@ class GerberZipper2():
                 self.json_data = {}
                 for fname in manufacturers_list:
                     try:
-                        d = json.load(codecs.open(fname, 'r', 'utf-8'))
-                        self.json_data[d['Name']] = json.load(codecs.open(fname, 'r', 'utf-8'))
+                        d = json.load(open(fname, 'r', encoding='utf-8'))
+                        self.json_data[d['Name']] = json.load(open(fname, 'r', encoding='utf-8'))
                     except Exception as err:
                         tb = sys.exc_info()[2]
                         alert(f'JSON error \n\n File : {os.path.basename(fname)}\n{err.with_traceback(tb)}', wx.ICON_WARNING)
@@ -867,37 +897,38 @@ class GerberZipper2():
                 self.locale_dir = os.path.join(os.path.dirname(__file__), "Locale")
                 locale_list = glob.glob(f'{self.locale_dir}/*.json')
                 language_arr=[]
+                stxttab = {}
                 strtab = {}
                 for fpath in locale_list:
                     fname = os.path.splitext(os.path.basename(fpath))[0]
                     language_arr.append(os.path.basename(fname))
-                    strtab[fname] = json.load(codecs.open(fpath, 'r', 'utf-8'))
+                    strtab[fname] = json.load(open(fpath, 'r', encoding='utf-8'))
                 if hasattr(subprocess, 'STARTUPINFO'):
                     startupinfo = subprocess.STARTUPINFO()
                     startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW
                     startupinfo.wShowWindow = subprocess.SW_HIDE
                 InitEm()
                 self.szPanel = [Em(75,9.5), Em(75,25)]
-                wx.Dialog.__init__(self, parent, id=-1, title=f'{title} {version}', style=wx.DEFAULT_DIALOG_STYLE | wx.CENTRE | wx.RESIZE_BORDER)
+                wx.Dialog.__init__(self, parent, id=-1, title=f'{title} Ver {VERSION.ver}', style=wx.DEFAULT_DIALOG_STYLE | wx.CENTRE | wx.RESIZE_BORDER)
                 self.panel = wx.Panel(self)
                 self.SetIcon(wx.Icon(self.icon_file_name))
 
                 manufacturers_arr=[]
                 for item in self.json_data.keys():
                     manufacturers_arr.append(item)
-                SText(self.panel, -1, getstr('LABEL'), pos=Em(1,0.5), size=Em(70,1))
-                SText(self.panel, -1, getstr('MANUFACTURER'), pos=Em(1,1.5), size=Em(14,1), style=wx.TE_RIGHT)
+                stxttab['LABEL'] = SText(self.panel, -1, getstr('LABEL'), pos=Em(1,0.5), size=Em(70,1))
+                stxttab['MANUFACTURER'] = SText(self.panel, -1, getstr('MANUFACTURER'), pos=Em(1,1.5), size=Em(14,1), style=wx.TE_RIGHT)
                 self.manufacturers = wx.ComboBox(self.panel, -1, 'Select Manufacturers', pos=Em(16,1.5), size=Em(30,1.5), choices=manufacturers_arr, style=wx.CB_READONLY)
 
-                SText(self.panel, -1, getstr('URL'), pos=Em(1,3), size=Em(14,1), style=wx.TE_RIGHT)
+                stxttab['URL'] = SText(self.panel, -1, getstr('URL'), pos=Em(1,3), size=Em(14,1), style=wx.TE_RIGHT)
                 self.url = wx.TextCtrl(self.panel, -1, '', pos=Em(16,3), size=Em(30,1), style=wx.TE_READONLY)
 
-                SText(self.panel, -1, getstr('GERBERDIR'), pos=Em(1,4), size=Em(14,1), style=wx.TE_RIGHT)
+                stxttab['GERBERDIR'] = SText(self.panel, -1, getstr('GERBERDIR'), pos=Em(1,4), size=Em(14,1), style=wx.TE_RIGHT)
                 self.gerberdir = wx.TextCtrl(self.panel, -1, '', pos=Em(16,4), size=Em(30,1))
 
-                SText(self.panel, -1, getstr('ZIPFNAME'), pos=Em(1,5), size=Em(14,1), style=wx.TE_RIGHT)
+                stxttab['ZIPFNAME'] = SText(self.panel, -1, getstr('ZIPFNAME'), pos=Em(1,5), size=Em(14,1), style=wx.TE_RIGHT)
                 self.zipfilename = wx.TextCtrl(self.panel, -1, '', pos=Em(16,5), size=Em(30,1))
-                SText(self.panel, -1, getstr('DESCRIPTION'), pos=Em(1,6), size=Em(14,1), style=wx.TE_RIGHT)
+                stxttab['DESCRIPTION'] = SText(self.panel, -1, getstr('DESCRIPTION'), pos=Em(1,6), size=Em(14,1), style=wx.TE_RIGHT)
                 self.label = SText(self.panel, -1, '',pos=Em(16,6), size=Em(45,1))
 
                 self.opt_RefillExec = wx.CheckBox(self.panel, -1, 'Refill Zones', pos=Em(52,2), size=Em(15,1))
@@ -905,14 +936,15 @@ class GerberZipper2():
                 self.opt_FabExec = wx.CheckBox(self.panel, -1, 'Generate Fab', pos=Em(52,4), size=Em(15,1))
                 self.opt_BomPosExec = wx.CheckBox(self.panel, -1, 'Generate BOM/POS', pos=Em(52,5), size=Em(15,1))
 
-                self.detailbtn = wx.ToggleButton(self.panel, -1, getstr('DETAIL'), pos=Em(2,7.5), size=Em(18,1.5))
-                self.execbtn = wx.Button(self.panel, -1, getstr('EXEC'), pos=Em(21,7.5), size=Em(18,1.5))
-                self.clsbtn = wx.Button(self.panel, -1, getstr('CLOSE'), pos=Em(40,7.5), size=Em(18,1.5))
+                stxttab['DETAIL'] = self.detailbtn = wx.ToggleButton(self.panel, -1, getstr('DETAIL'), pos=Em(2,7.5), size=Em(18,1.5))
+                stxttab['EXEC'] = self.execbtn = wx.Button(self.panel, -1, getstr('EXEC'), pos=Em(21,7.5), size=Em(18,1.5))
+                stxttab['CLOSE'] = self.clsbtn = wx.Button(self.panel, wx.ID_CANCEL, getstr('CLOSE'), pos=Em(40,7.5), size=Em(18,1.5))
 
                 self.manufacturers.Bind(wx.EVT_COMBOBOX, self.OnManufacturers)
                 self.detailbtn.Bind(wx.EVT_TOGGLEBUTTON, self.OnDetail)
                 self.execbtn.Bind(wx.EVT_BUTTON, self.OnExec)
-                self.clsbtn.Bind(wx.EVT_BUTTON, self.OnClose)
+#                self.clsbtn.Bind(wx.EVT_BUTTON, self.OnClose)
+#                self.Bind(wx.EVT_CLOSE, self.OnCloseEvt)
 
                 self.panel2 = wx.lib.scrolledpanel.ScrolledPanel(self.panel, -1, pos=Em(0,10), size=Em(75,10.5), style=wx.BORDER_SUNKEN)
                 self.panel2.SetScrollbars(20,20,0,100)
@@ -923,7 +955,8 @@ class GerberZipper2():
                 self.opt_DrcSchematicParity = wx.CheckBox(self.panel2, -1, 'SchematicParity', pos=Em(24,2))
                 self.opt_DrcAllTrackErrors = wx.CheckBox(self.panel2, -1, "AllTrackErrors", pos=Em(24,3))
 
-                self.language = wx.ComboBox(self.panel2, -1, 'Language', pos=Em(65,0.5), size=Em(7,1.5), choices=language_arr, style=wx.CB_READONLY)
+                SText(self.panel2, -1, 'Lang:', style=wx.TE_RIGHT, pos=Em(54,0.5), size=Em(5,1))
+                self.language = wx.ComboBox(self.panel2, -1, 'Language', pos=Em(60,0.5), size=Em(10,1.5), choices=language_arr, style=wx.CB_READONLY)
                 l = self.pluginSettings.get('Language')
                 if l in language_arr:
                     self.language.SetSelection(language_arr.index(l))
@@ -1096,7 +1129,7 @@ class GerberZipper2():
             def OnSize(self, e):
                 self.clSize = self.GetClientSize()
                 self.panel.SetSize(self.clSize.x, self.clSize.y)
-                self.panel2.SetSize(self.clSize.x, self.clSize.y - Em(0,10)[1])
+                self.panel2.SetSize(self.clSize.x, max(-1,self.clSize.y - Em(0,10)[1]))
 
             def OnCheck(self, e):
                 self.pluginSettings['RefillExec'] = self.opt_RefillExec.GetValue()
@@ -1254,10 +1287,18 @@ class GerberZipper2():
                 self.gerber_dir = os.path.join(self.work_dir, self.gerberdir.GetValue())
                 if not os.path.exists(self.gerber_dir):
                     os.makedirs(self.gerber_dir)
+            
+            def LangRefresh(self):
+                for st in stxttab:
+                    stxttab[st].SetLabel(getstr(st))
+                    stxttab[st].Refresh()
+                    stxttab[st].Update()
 
             def OnLanguage(self,e):
+                global lang
                 obj = e.GetEventObject()
                 self.pluginSettings['Language'] = lang = obj.GetStringSelection()
+                self.LangRefresh()
                 e.Skip()
 
             def OnManufacturers(self,e):
@@ -1286,6 +1327,9 @@ class GerberZipper2():
             def OnClose(self, e):
                 e.Skip()
                 self.Close()
+            
+#            def OnCloseEvt(self, e):
+#                self.Destroy()
         
             def OnExec(self, e):
                 global execDialog

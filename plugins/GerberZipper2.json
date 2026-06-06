@@ -1,7 +1,8 @@
 {
     "Recent": "JLCPCB",
     "RefillExec": true,
-    "DrcExec": false,
+    "DrcExec": true,
     "FabExec": true,
-    "BomPosExec": true
+    "BomPosExec": true,
+    "Language": "default"
 }

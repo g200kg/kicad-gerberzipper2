@@ -1,0 +1,10 @@
+
+Steps for running on WSLg + Ubuntu + kicad-nightly
+
+$ sudo add-apt-repository --yes ppa:kicad/kicad-dev-nightly
+$ sudo apt update
+$ sudo apt install kicad-nightly
+
+$ sudo apt install python3-pip
+$ sudo apt install python3-venv
+$ sudo apt install python3-wxgtk4.0

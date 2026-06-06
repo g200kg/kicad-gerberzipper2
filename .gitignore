@@ -3,6 +3,7 @@ Gerber/
 settings.json
 test*.*
 plugins/Test/
+test*/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

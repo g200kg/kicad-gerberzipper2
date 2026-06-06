@@ -31,7 +31,7 @@ KiCad 10.0.3 Command Prompt
 > KiCad menu -> [Preferences] -> [Preferences] -> Plugins -> Check Enable KiCad API
 
 ## History  
-
+2.0.5 WSLg workaround / xlsx output
 2.0.4 Fix bug about language setting
 2.0.3 Update metadata for IPC plugin / Fixed minor bugs
 2.0.2 Fix temp filename  

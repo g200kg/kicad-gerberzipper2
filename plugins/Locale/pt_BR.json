@@ -1,6 +1,6 @@
 {
   "LABEL":"Cria arquivos GERBERs, zipando-os para fabricantes de PCB.",
-  "MENUFACTURERS":"Fabricante",
+  "MANUFACTURER":"Fabricante",
   "URL":"URL",
   "GERBERDIR":"Dir. GERBER",
   "ZIPFNAME":"Arquivo ZIP",
