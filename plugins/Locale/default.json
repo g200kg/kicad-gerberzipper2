@@ -1,5 +1,5 @@
 {
-  "LABEL":"Make Gerbers/BOM/POS/ZIP for specific PCB manufacturers. (IPC API)",
+  "LABEL":"Make Gerbers/BOM/POS/ZIP for specific PCB manufacturers.",
   "MANUFACTURER":"Manufacturer",
   "URL":"URL",
   "GERBERDIR":"Gerber Dir",

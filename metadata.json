@@ -1,9 +1,9 @@
 {
     "$schema": "https://go.kicad.org/pcm/schemas/v1",
-    "name": "GerberZipper2",
-    "description": "Generate Gerber/BOM/POS/ZIP for the specified PCB vendor (IPC API)",
-    "description_full": "Generate Gerber/BOM/POS/ZIP for the specified PCB vendor and Zip it.",
     "identifier":"com.github.g200kg.kicad-gerberzipper2",
+    "name": "Gerber Zipper 2",
+    "description": "Generate Gerbers/ZIP/BOM/POS for PCB Manufacturers",
+    "description_full": "Generate Gerbers/ZIP/BOM/POS for PCB Manufacturers.",
     "type":"plugin",
     "author": {
         "contact":{
@@ -27,6 +27,7 @@
     "license":"MIT",
     "versions":[
         {
+            "version": "2.0.5",
             "kicad_version": "9.0",
             "runtime": "ipc",
             "platforms": [
@@ -34,8 +35,7 @@
                 "macos",
                 "windows"
             ],
-            "status": "stable",
-            "version": "2.0.5"
+            "status": "stable"
         }
     ]
 }
