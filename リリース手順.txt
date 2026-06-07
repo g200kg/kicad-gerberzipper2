@@ -16,14 +16,14 @@
 		plugins/Locale/*
 		plugins/Manufacturers/*
 		plugins/Assets/*
-	
+
 ## GitHub バージョンTag / Release 
 
 # kicad-pcm-repository リポジトリ
 
 ## packages.json のversions に追加
 
-* $ python updatepackages.py
+* $ python updatepackagesjson.py
     Zip page Permalink : https://github.com/g200kg/kicad-gerberzipper2/blob/xxxxxx/pcmpackage-gerberzipper2.zip
         ファイルページの右上三点メニューから"Copy Permalink"
 
@@ -35,7 +35,10 @@
     * download_size : zipのサイズ
     * download_sha256 : wsl$ sha256sum pcmpackage.zip
     * install_size : 展開後のサイズ
-    * repository.json : wsl$ python update.py
+
+## repository.json を更新
+
+* $ python updaterepositoryjson.py
         e.g.
         > "packages": {
         >  "sha256": "5ee5b228c1523cd952a08159690174ee170e9011009297a00e76bfa11079e91a",

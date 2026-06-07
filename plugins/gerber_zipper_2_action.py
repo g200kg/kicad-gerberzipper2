@@ -17,6 +17,7 @@ import atexit
 import shutil
 import inspect
 import traceback
+#import xlsxwriter
 from kipy import KiCad
 from kipy.proto.board.board_types_pb2 import BoardLayer
 from kipy.proto.common.types import base_types_pb2, DocumentType, DocumentSpecifier
@@ -596,7 +597,7 @@ def GerberExec(self, board):
     cmd = f'"{kicadcli_path}" pcb export gerbers {opt} --no-protel-ext -o {self.temp_dir} -l {lystr} {self.board_path}'
     execDialog.Cprint(f'cmd : {cmd}')
     ret = SubprocRun(cmd)
-    if ret['stat'] > 0:
+    if ret['stat'] != 0:
         raise Exception(f'export grbers Error : \n{ret["str"]}')
     for k in kylist:
         if layers[k] != '':
@@ -632,7 +633,7 @@ def GerberExec(self, board):
     cmd = f'"{kicadcli_path}" pcb export drill {opt} -o {self.temp_dir} --format excellon {self.board_path}'
     print(f'cmd : {cmd}')
     ret = SubprocRun(cmd)
-    if ret['stat'] > 0:
+    if ret['stat'] != 0:
         raise Exception(f'export drill Error : \n{ret["stat"]}')
     if self.settings['MergePTHandNPTH']:
         renamefile(self.temp_dir, f'{temp_basename}.drl', self.gerber_dir, self.settings['Drill']['Drill'].replace('*', self.basename), zipfiles)
@@ -691,14 +692,14 @@ def FabExec(self, board):
         layers = fabfile['TopLayers']
         cmd = f'"{kicadcli_path}" pcb export pdf -o {self.gerber_dir}/{fn.replace("*",self.basename)} -l {layers} {self.board_path}'
         ret = SubprocRun(cmd)
-        if(ret['stat'] > 0):
+        if(ret['stat'] != 0):
             return {'stat':1, 'str':ret['str']}
     fn = fabfile['BottomFilename']
     if fn != '':
         layers = fabfile['BottomLayers']
         cmd = f'"{kicadcli_path}" pcb export pdf -o {self.gerber_dir}/{fn.replace("*",self.basename)} -l {layers} {self.board_path}'
         ret = SubprocRun(cmd)
-        if(ret['stat'] > 0):
+        if(ret['stat'] != 0):
             return {'stat':1, 'str':ret['str']}
     return {'stat':0, 'str':ret['str']}
 
@@ -854,7 +855,11 @@ class GerberZipper2():
                 global redirect_ignore
                 global lang
                 global stxttab
-
+#                alert("start")
+#                vvv=kicad.get_version()
+#                sss=kicad.get_plugin_settings_path("vn.thanhduongvs.component-position")
+#                alert(sss)
+#                alert("start2")
                 redirect_ignore = open(os.devnull, 'w')
                 kicadcli_path = kicad.get_kicad_binary_path('kicad-cli')
                 prefix_path = os.path.join(os.path.dirname(__file__))
