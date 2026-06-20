@@ -11,6 +11,7 @@ with zipfile.ZipFile(f'pcmpackage-gerberzipper2-v{plugins.VERSION.ver}.zip', 'w'
     addfile(zf, 'metadata.json')
     addfile(zf, 'resources/icon.png')
     addfile(zf, 'plugins/gerber_zipper_2_action.py')
+    addfile(zf, 'plugins/mkxlsx.py')
     addfile(zf, 'plugins/VERSION.py')
     addfile(zf, 'plugins/plugin.json')
     addfile(zf, 'plugins/requirements.txt')

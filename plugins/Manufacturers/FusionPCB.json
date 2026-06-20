@@ -68,6 +68,7 @@
     "BottomFilename":"*-FusionPCB-BOM-Bottom.xlsx",
     "MergeSide":false,
     "IncludeTHT":false,
+    "Tabs":[32, 40, 15, 40],
     "Header": "\"Part/Designator\",\"Manufacturer Part Number/Seeed SKU\",\"Quantity\",\"Link\"",
     "Row": "\"${ref}\",\"${PN}\",${qty},\"${URL}\""
   },

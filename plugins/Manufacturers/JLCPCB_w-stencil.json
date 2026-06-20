@@ -64,17 +64,17 @@
   },
   "OptionalFiles":[],
   "BomFile":{
-    "TopFilename":"*-JLCPCB-BOM-Top.csv",
-    "BottomFilename":"*-JLCPCB-BOM-Bottom.csv",
+    "TopFilename":"*-JLCPCB-BOM-Top.xlsx",
+    "BottomFilename":"*-JLCPCB-BOM-Bottom.xlsx",
     "MergeSide":false,
     "IncludeTHT":false,
-    "Tabs":[26, 26, 36, 25, 25, 10],
+    "Tabs":[26, 32, 40, 20, 25, 10],
     "Header": "Comment, Designator, Footprint, JLCPCB Part#, MFR.Part#, Qty",
     "Row": "\"${val}\",\"${ref}\",\"${fp}\",\"${LCSC}\",\"${PN}\",${qty}"
   },
   "PosFile":{
-    "TopFilename":"*-JLCPCB-POS-Top.csv",
-    "BottomFilename":"*-JLCPCB-POS-Bottom.csv",
+    "TopFilename":"*-JLCPCB-POS-Top.xlsx",
+    "BottomFilename":"*-JLCPCB-POS-Bottom.xlsx",
     "MergeSide":false,
     "IncludeTHT":false,
     "Tabs":[10, 10, 10, 6, 10, 36, 8],

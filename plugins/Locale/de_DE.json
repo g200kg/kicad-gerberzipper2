@@ -1,13 +1,22 @@
 {
+  "lang":"Deutsch",
+  "alias":"German_Germany",
+  "RUNALREADY":"It may already be running. Run anyway?",
   "LABEL":"Erzeuge Gerber-Dateien und ZIP-Datei für bestimmte Hersteller.",
   "MANUFACTURER":"Hersteller/Vorgabe",
   "URL":"URL",
   "GERBERDIR":"Gerber Ordner",
   "ZIPFNAME":"ZIP Dateiname",
   "DESCRIPTION":"Beschreibung",
-  "EXEC":"Erzeuge Gerber und ZIP",
+  "REFILLEXEC":"Refill Zones",
+  "DRCEXEC":"Exec DRC",
+  "FABEXEC":"Generate Fab",
+  "BOMPOSEXEC":"Generate BOM/POS",
   "DETAIL":"Zeige Einstellungen",
+  "EXEC":"Erzeuge Gerber und ZIP",
+  "OPENOUTDIR":"Open Output Dir",
   "CLOSE":"Schließen",
   "DESC2":"Die Einstellungen sind temporär. Permanente Einstellungen können in den jeweiligen JSON Dateien gemacht werden.",
-  "COMPLETE":"Export fertiggestellt.\n\nAusgabe: %s"
+  "OPENSETTINGS":"Open Settings Folder",
+  "COMPLETE":"Export fertiggestellt."
 }

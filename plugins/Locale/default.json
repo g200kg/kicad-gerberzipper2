@@ -1,20 +1,21 @@
 {
+  "lang":"default",
+  "RUNALREADY":"It may already be running. Run anyway?",
   "LABEL":"Make Gerbers/BOM/POS/ZIP for specific PCB manufacturers.",
   "MANUFACTURER":"Manufacturer",
   "URL":"URL",
   "GERBERDIR":"Gerber Dir",
   "ZIPFNAME":"Zip Filename",
   "DESCRIPTION":"Description",
-  "EXEC":"Make Gerber and ZIP",
   "REFILLEXEC":"Refill Zones",
   "DRCEXEC":"Exec DRC",
   "FABEXEC":"Generate Fab",
   "BOMPOSEXEC":"Generate BOM/POS",
   "DETAIL":"Show Settings Details",
+  "EXEC":"Make Gerber and ZIP",
+  "OPENOUTDIR":"Open Output Dir",
   "CLOSE":"Close",
   "DESC2":"The changes here are temporary. If you want to change it permanently edit the corresponding json file",
-  "COMPLETE":"Output file : %s",
-  "BOMFILE":"BOM File",
-  "POSFILE":"Pos File",
-  "BOMPOSCOMPLETE":" BOM-TopFile:%s\n BOM-BottomFile:%s\n POS-TopFile:%s\n POS-BottomFile:%s"
+  "OPENSETTINGS":"Open Settings Folder",
+  "COMPLETE":"Output Complete"
 }

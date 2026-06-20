@@ -1,15 +1,22 @@
 {
+  "lang":"日本語",
+  "alias":"Japanese_Japan",
+  "RUNALREADY":"既に起動している可能性があります。起動しますか?",
   "LABEL":"選択した基板メーカー向けのガーバーを作成し ZIP ファイルにまとめます。",
   "MANUFACTURER":"基板メーカー",
   "URL":"URL",
   "GERBERDIR":"ガーバーディレクトリ",
   "ZIPFNAME":"Zip ファイル名",
   "DESCRIPTION":"説明",
-  "EXEC":"ガーバー/ZIPファイル作成",
-  "BOMPOSEXEC":"BOM/POSファイル作成",
+  "REFILLEXEC":"ゾーン塗潰し実行",
+  "DRCEXEC":"DRC 実行",
+  "FABEXEC":"Fab 出力実行",
+  "BOMPOSEXEC":"BOM/POS 出力実行",
   "DETAIL":"設定の詳細を表示",
+  "EXEC":"ガーバー/ZIP ファイル作成",
+  "OPENOUTDIR":"出力フォルダーを開く",
   "CLOSE":"閉じる",
   "DESC2":"ここでの変更は一時的なものです。恒久的に変更したい場合は対応するjsonファイルを編集してください。",
-  "COMPLETE":"GerberZipper 完了。 \n\n 出力ファイル : %s",
-  "BOMPOSCOMPLETE":"BOM/POSファイル作成完了\n\n BOM-Top file : %s\n BOM-Bottom file : %s\n POS-Top file : %s\n POS-Bottom file : %s"
+  "OPENSETTINGS":"設定ファイルフォルダーを開く",
+  "COMPLETE":"出力を完了しました。"
 }

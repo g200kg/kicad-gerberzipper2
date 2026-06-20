@@ -2,7 +2,7 @@
 
 ## バージョンの更新
 	VERSION.py
-	metadata.json line 38
+	metadata.json line 30
 	README.md #### Note / #### 注
 
 ## PCMパッケージ作成
