@@ -1141,13 +1141,23 @@ class GerberZipper2():
                 if not os.path.exists(self.temp_dir):
                     exit(0)
 
+            def getDefaultLang(self):
+                if sys.platform == 'darwin':
+                    result = subprocess.run(['defaults', 'read', '-g', 'AppleLanguages'], capture_output=True, text=True)
+                    languages = result.stdout.strip().replace('"', '').replace(',', '').replace('(', '').replace(')', '').split()
+                    loc = languages[0]
+                else:
+                    locale.setlocale(locale.LC_ALL,'')
+                    loc = locale.getlocale()
+                    loc = loc[0]
+                loc = loc.replace('-','_')
+                return loc
+
             def SelectLang(self, lang):
                 if lang == 'default':
                     l = self.common_settings['system']['language']
                     if l == 'Default':
-#                        locale.setlocale(locale.LC_ALL,'')
-                        loc = locale.getlocale()
-                        loc = loc[0]
+                        loc = self.getDefaultLang()
                         for k in strtab:
                             if k == loc or strtab[k].get('alias') == loc:
                                 return k
@@ -1349,6 +1359,7 @@ class GerberZipper2():
                 global lang
                 obj = e.GetEventObject()
                 self.pluginSettings['Language'] = lang = obj.GetStringSelection()
+                lang = self.SelectLang(lang)
                 self.LangRefresh()
                 e.Skip()
 
