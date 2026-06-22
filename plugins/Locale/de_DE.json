@@ -16,7 +16,7 @@
   "EXEC":"Erzeuge Gerber und ZIP",
   "OPENOUTDIR":"Open Output Dir",
   "CLOSE":"Schließen",
-  "DESC2":"Die Einstellungen sind temporär. Permanente Einstellungen können in den jeweiligen JSON Dateien gemacht werden.",
+  "DESC2":"Die Einstellungen sind temporär.\r\n Permanente Einstellungen können in den jeweiligen JSON Dateien gemacht werden.",
   "OPENSETTINGS":"Open Settings Folder",
   "COMPLETE":"Export fertiggestellt."
 }

@@ -16,7 +16,7 @@
   "EXEC":"Cria GERBERs e ZIP",
   "OPENOUTDIR":"Open Output Dir",
   "CLOSE":"Fechar",
-  "DESC2":"Mudanças aqui são temporárias. Edite os arquivos JSON para mudanças permanentes.",
+  "DESC2":"Mudanças aqui são temporárias.\r\n Edite os arquivos JSON para mudanças permanentes.",
   "OPENSETTINGS":"Open Settings Folder",
   "COMPLETE":"GerberZipper completo."
 }

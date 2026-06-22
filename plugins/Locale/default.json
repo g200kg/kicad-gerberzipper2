@@ -15,7 +15,7 @@
   "EXEC":"Make Gerber and ZIP",
   "OPENOUTDIR":"Open Output Dir",
   "CLOSE":"Close",
-  "DESC2":"The changes here are temporary. If you want to change it permanently edit the corresponding json file",
+  "DESC2":"The changes here are temporary.\r\nIf you want to change it permanently, edit the corresponding json file in the settings folder",
   "OPENSETTINGS":"Open Settings Folder",
   "COMPLETE":"Output Complete"
 }
