@@ -17,6 +17,7 @@ import atexit
 import shutil
 import inspect
 import traceback
+import webbrowser
 import mkxlsx
 from kipy import KiCad
 from kipy.proto.board.board_types_pb2 import BoardLayer
@@ -1107,7 +1108,9 @@ class GerberZipper2():
                 self.opt_PosMergeSide = wx.CheckBox(self.panel2, -1, 'PosMergeSide', pos=Em(35,39))
                 self.opt_PosIncludeTHT = wx.CheckBox(self.panel2, -1, 'PosIncludeTHT', pos=Em(35,40))
                 stxttab['DESC2'] = SText(self.panel2, -1, getstr('DESC2'), pos=Em(2,42), size=Em(80,1))
-                stxttab['OPENSETTINGS'] = self.OpenSettingsDirBtn = wx.Button(self.panel2, -1, getstr('OPENSETTINGS'), pos=Em(5, 43.5), size=Em(20,2))
+                stxttab['OPENSETTINGS'] = self.OpenSettingsDirBtn = wx.Button(self.panel2, -1, getstr('OPENSETTINGS'), pos=Em(5, 43.5), size=Em(20,1.5))
+                self.GitHubLinkBtn = wx.Button(self.panel2, -1, 'GitHub :   https://github.com/g200kg/kicad-gerberzipper2', pos=Em(5,46), size=Em(50,1.5))
+                self.GitHubLinkBtn.Bind(wx.EVT_BUTTON, self.OnGitHubLink)
                 self.OpenSettingsDirBtn.Bind(wx.EVT_BUTTON, self.OnOpenSettingsDir)
                 self.Bind(wx.EVT_SIZE, self.OnSize)
                 self.Bind(wx.EVT_CHECKBOX, self.OnCheck)
@@ -1407,6 +1410,10 @@ class GerberZipper2():
 
             def OnOpenSettingsDir(self, e):
                 self.OpenFolder(self.settings_dir)
+                e.Skip()
+            
+            def OnGitHubLink(self, e):
+                webbrowser.open_new('https://github.com/g200kg/kicad-gerberzipper2')
                 e.Skip()
                 
         board = GetBoard()
