@@ -53,7 +53,7 @@ For example, if you configure the fields using the settings shown above, the res
 ```
 
 ## History
-2.0.6 Support drill report / Optional files / xlsx output
+2.0.6 Support drill report / Optional files / xlsx output  
 2.0.5 WSLg workaround / xlsx output  
 2.0.4 Fix bug about language setting  
 2.0.3 Update metadata for IPC plugin / Fixed minor bugs  
@@ -119,7 +119,7 @@ KiCad の PCB エディターから起動すると各 PCB 業者向けにパラ�
 ```
 
 ## 履歴
-2.0.6 2.0.6 Support drill report / Optional files / xlsx output
+2.0.6 Support drill report / Optional files / xlsx output  
 2.0.5 WSLg workaround / xlsx output  
 2.0.4 Fix bug about language setting  
 2.0.3 Update metadata for IPC plugin / Fixed minor bugs  
