@@ -53,6 +53,7 @@ For example, if you configure the fields using the settings shown above, the res
 ```
 
 ## History
+2.0.7 Fix Pos file / Workaround for some Bugs  
 2.0.6 Support drill report / Optional files / xlsx output  
 2.0.5 WSLg workaround / xlsx output  
 2.0.4 Fix bug about language setting  
@@ -119,6 +120,7 @@ KiCad の PCB エディターから起動すると各 PCB 業者向けにパラ�
 ```
 
 ## 履歴
+2.0.7 Fix Pos file / Workaround for some Bugs  
 2.0.6 Support drill report / Optional files / xlsx output  
 2.0.5 WSLg workaround / xlsx output  
 2.0.4 Fix bug about language setting  
