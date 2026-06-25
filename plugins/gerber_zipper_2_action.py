@@ -168,11 +168,13 @@ class RedirectText(object):
 
 class ExecDialog(wx.Dialog):
     def __init__(self, parent):
-        wx.Dialog.__init__(self, parent, -1, f'{title} Exec', style=wx.CAPTION|wx.STAY_ON_TOP)
+        wx.Dialog.__init__(self, parent, -1, f'{title} Exec', style=wx.CAPTION|wx.SYSTEM_MENU|wx.STAY_ON_TOP)
+        ico=wx.Icon('Assets/icon.png', wx.BITMAP_TYPE_PNG)
+        self.SetIcon(ico)
         self.SetClientSize(Em(82,20))
         panel = wx.Panel(self)
         self.text = wx.TextCtrl(panel, -1, style=wx.TE_MULTILINE, pos=Em(1,1),size=Em(80,16))
-        self.button = wx.Button(panel, wx.ID_OK, "Close", pos=Em(5,18),size=Em(10,1.5))
+        self.button = wx.Button(panel, wx.ID_OK, getstr('CLOSE'), pos=Em(5,18),size=Em(10,1.5))
         self.button.Hide()
         self.button.Bind(wx.EVT_BUTTON,self.OnClose)
         self.Bind(wx.EVT_CLOSE,self.Close)
@@ -609,7 +611,7 @@ def GerberExec(self, board):
         opt += '--precision 5 '
     if self.settings['UseAuxOrigin']:
         opt += '--use-drill-file-origin '
-    cmd = f'"{kicadcli_path}" pcb export gerbers {opt} --no-protel-ext -o {self.temp_dir} -l {lystr} {self.board_path}'
+    cmd = f'"{kicadcli_path}" pcb export gerbers {opt} --no-protel-ext -o "{self.temp_dir}" -l {lystr} "{self.board_path}"'
     execDialog.Cprint(f'cmd : {cmd}')
     ret = SubprocRun(cmd)
     if ret['stat'] != 0:
@@ -652,7 +654,7 @@ def GerberExec(self, board):
             opt += os.path.join(self.temp_dir,f'{self.basename}-drill.rpt')
         else:
             alert('Drill report option require KiCad version >= 10.x')
-    cmd = f'"{kicadcli_path}" pcb export drill {opt} -o {self.temp_dir} --format excellon {self.board_path}'
+    cmd = f'"{kicadcli_path}" pcb export drill {opt} -o "{self.temp_dir}" --format excellon "{self.board_path}"'
     execDialog.Cprint(f'cmd : {cmd}')
     try:
         ret = SubprocRun(cmd)
@@ -743,7 +745,7 @@ def FabExec(self, board):
         if fn != '':
             layers = fabfile['TopLayers']
             fname = os.path.join(self.gerber_dir, fn.replace("*",self.basename))
-            cmd = f'"{kicadcli_path}" pcb export pdf -o "{fname}" -l "{layers}" "{self.board_path}"'
+            cmd = f'"{kicadcli_path}" pcb export pdf -o "{fname}" -l {layers} "{self.board_path}"'
             execDialog.Cprint(f'cmd : {cmd}')
             ret = SubprocRun(cmd)
             if(ret['stat'] != 0):
@@ -752,7 +754,7 @@ def FabExec(self, board):
         if fn != '':
             layers = fabfile['BottomLayers']
             fname = os.path.join(self.gerber_dir, fn.replace("*",self.basename))
-            cmd = f'"{kicadcli_path}" pcb export pdf -o "{fname}" -l "{layers}" "{self.board_path}"'
+            cmd = f'"{kicadcli_path}" pcb export pdf -o "{fname}" -l {layers} "{self.board_path}"'
             execDialog.Cprint(f'cmd : {cmd}')
             ret = SubprocRun(cmd)
             if(ret['stat'] != 0):
@@ -1017,15 +1019,15 @@ class GerberZipper2():
                 stxttab['DESCRIPTION'] = SText(self.panel, -1, getstr('DESCRIPTION'), pos=Em(1,6), size=Em(14,1), style=wx.TE_RIGHT)
                 self.label = SText(self.panel, -1, '',pos=Em(16,6), size=Em(45,1))
 
-                stxttab['REFILLEXEC'] = self.opt_RefillExec = wx.CheckBox(self.panel, -1, getstr('REFILLEXEC'), pos=Em(52,2), size=Em(15,1))
-                stxttab['DRCEXEC'] = self.opt_DrcExec = wx.CheckBox(self.panel, -1, getstr('DRCEXEC'), pos=Em(52,3), size=Em(15,1))
-                stxttab['FABEXEC'] = self.opt_FabExec = wx.CheckBox(self.panel, -1, getstr('FABEXEC'), pos=Em(52,4), size=Em(15,1))
-                stxttab['BOMPOSEXEC'] = self.opt_BomPosExec = wx.CheckBox(self.panel, -1, getstr('BOMPOSEXEC'), pos=Em(52,5), size=Em(15,1))
+                stxttab['REFILLEXEC'] = self.opt_RefillExec = wx.CheckBox(self.panel, -1, getstr('REFILLEXEC'), pos=Em(52,2), size=Em(20,1))
+                stxttab['DRCEXEC'] = self.opt_DrcExec = wx.CheckBox(self.panel, -1, getstr('DRCEXEC'), pos=Em(52,3), size=Em(20,1))
+                stxttab['FABEXEC'] = self.opt_FabExec = wx.CheckBox(self.panel, -1, getstr('FABEXEC'), pos=Em(52,4), size=Em(20,1))
+                stxttab['BOMPOSEXEC'] = self.opt_BomPosExec = wx.CheckBox(self.panel, -1, getstr('BOMPOSEXEC'), pos=Em(52,5), size=Em(20,1))
 
-                stxttab['DETAIL'] = self.detailbtn = wx.ToggleButton(self.panel, -1, getstr('DETAIL'), pos=Em(2,7.5), size=Em(18,1.5))
-                stxttab['EXEC'] = self.execbtn = wx.Button(self.panel, -1, getstr('EXEC'), pos=Em(21,7.5), size=Em(18,1.5))
-                stxttab['OPENOUTDIR'] = self.openoutdirbtn = wx.Button(self.panel, -1, getstr('OPENOUTDIR'), pos=Em(40,7.5), size=Em(18,1.5))
-                stxttab['CLOSE'] = self.clsbtn = wx.Button(self.panel, wx.ID_CANCEL, getstr('CLOSE'), pos=Em(59,7.5), size=Em(18,1.5))
+                stxttab['DETAIL'] = self.detailbtn = wx.ToggleButton(self.panel, -1, getstr('DETAIL'), pos=Em(2,7.5), size=Em(18,1.2))
+                stxttab['EXEC'] = self.execbtn = wx.Button(self.panel, -1, getstr('EXEC'), pos=Em(21,7.5), size=Em(18,1.2))
+                stxttab['OPENOUTDIR'] = self.openoutdirbtn = wx.Button(self.panel, -1, getstr('OPENOUTDIR'), pos=Em(40,7.5), size=Em(18,1.2))
+                stxttab['CLOSE'] = self.clsbtn = wx.Button(self.panel, wx.ID_CANCEL, getstr('CLOSE'), pos=Em(59,7.5), size=Em(18,1.2))
 
                 self.manufacturers.Bind(wx.EVT_COMBOBOX, self.OnManufacturers)
                 self.detailbtn.Bind(wx.EVT_TOGGLEBUTTON, self.OnDetail)
