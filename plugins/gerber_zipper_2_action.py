@@ -205,6 +205,8 @@ class ExecDialog(wx.Dialog):
         execDialog = None
     def Complete(self, s):
         self.button.Show()
+        self.button.SetFocus()
+        self.button.SetDefault()
         self.Cprint(s)
         wx.Bell()
     def waitReady(self):
@@ -243,7 +245,7 @@ class ExecDialog(wx.Dialog):
                     self.Cprint(ret['str'])
                     if ret['stat'] > 0:
                         wx.Bell()
-                        if wx.MessageBox(f'DRC Error\n{ret["str"]}\n{getstr("CONTINUE?")}', "GerberZipper2", wx.YES_NO) == wx.NO:
+                        if wx.MessageBox(f'DRC Error\n{ret["str"]}\n\n{getstr("CONTINUE?")}', "GerberZipper2", wx.YES_NO) == wx.NO:
                             self.Complete('\nAborted\n')
                             return
                     else:
@@ -266,7 +268,7 @@ class ExecDialog(wx.Dialog):
                     self.Cprint(ret['str'])
                     if ret['stat'] > 0:
                         wx.Bell()
-                        if wx.MessageBox(f'Fab Export Error\n{ret["str"]}\n{getstr("CONTINUE?")}', "GerberZipper2", wx.YES_NO) == wx.NO:
+                        if wx.MessageBox(f'Fab Export Error\n{ret["str"]}\n\n{getstr("CONTINUE?")}', "GerberZipper2", wx.YES_NO) == wx.NO:
                             self.Complete('\nAborted\n')
                             return
                     self.Cprint('Done\n')
@@ -1030,6 +1032,7 @@ class GerberZipper2():
                 stxttab['EXEC'] = self.execbtn = wx.Button(self.panel, -1, getstr('EXEC'), pos=Em(21,7.5), size=Em(18,1.2))
                 stxttab['OPENOUTDIR'] = self.openoutdirbtn = wx.Button(self.panel, -1, getstr('OPENOUTDIR'), pos=Em(40,7.5), size=Em(18,1.2))
                 stxttab['CLOSE'] = self.clsbtn = wx.Button(self.panel, wx.ID_CANCEL, getstr('CLOSE'), pos=Em(59,7.5), size=Em(18,1.2))
+                self.execbtn.SetDefault()
 
                 self.manufacturers.Bind(wx.EVT_COMBOBOX, self.OnManufacturers)
                 self.detailbtn.Bind(wx.EVT_TOGGLEBUTTON, self.OnDetail)
