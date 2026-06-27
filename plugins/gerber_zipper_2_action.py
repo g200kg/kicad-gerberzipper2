@@ -243,7 +243,7 @@ class ExecDialog(wx.Dialog):
                     self.Cprint(ret['str'])
                     if ret['stat'] > 0:
                         wx.Bell()
-                        if wx.MessageBox(f'DRC Error\n{ret["str"]}\n{getstr("ABORT")}', "GerberZipper2", wx.YES_NO) == wx.YES:
+                        if wx.MessageBox(f'DRC Error\n{ret["str"]}\n{getstr("CONTINUE?")}', "GerberZipper2", wx.YES_NO) == wx.NO:
                             self.Complete('\nAborted\n')
                             return
                     else:
@@ -265,8 +265,10 @@ class ExecDialog(wx.Dialog):
                     ret = FabExec(self.parent, self.board)
                     self.Cprint(ret['str'])
                     if ret['stat'] > 0:
-                        self.Complete('\nAborted\n')
-                        return
+                        wx.Bell()
+                        if wx.MessageBox(f'Fab Export Error\n{ret["str"]}\n{getstr("CONTINUE?")}', "GerberZipper2", wx.YES_NO) == wx.NO:
+                            self.Complete('\nAborted\n')
+                            return
                     self.Cprint('Done\n')
                 else:
                     self.Cprint('Skip\n')
