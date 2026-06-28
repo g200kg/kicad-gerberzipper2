@@ -244,8 +244,7 @@ class ExecDialog(wx.Dialog):
                     ret = DrcExec(self.parent, self.board)
                     self.Cprint(ret['str'])
                     if ret['stat'] > 0:
-                        wx.Bell()
-                        if wx.MessageBox(f'DRC Error\n{ret["str"]}\n\n{getstr("CONTINUE?")}', "GerberZipper2", wx.YES_NO) == wx.NO:
+                        if alert(f'DRC\n\n{ret["str"]}\n\n{getstr("CONTINUE?")}', flag=wx.CANCEL) == wx.CANCEL:
                             self.Complete('\nAborted\n')
                             return
                     else:
@@ -258,7 +257,11 @@ class ExecDialog(wx.Dialog):
                 ret = GerberExec(self.parent, self.board)
                 self.Cprint(ret['str'])
                 if ret['stat'] > 0:
-                    raise Exception(f'Generate Gerber Error : \n{ret["str"]}')
+                    wx.Bell()
+                    if alert(f'Gerber Export\n\n{ret["str"]}\n\n{getstr("CONTINUE?")}', wx.CANCEL) == wx.CANCEL:
+                        self.Complete('\nAborted\n')
+                        return
+#                    raise Exception(f'Generate Gerber Error : \n{ret["str"]}')
                 self.Cprint('Done\n')
                 self.Cprint('--- Fab ---')
                 self.Progress()
@@ -267,8 +270,7 @@ class ExecDialog(wx.Dialog):
                     ret = FabExec(self.parent, self.board)
                     self.Cprint(ret['str'])
                     if ret['stat'] > 0:
-                        wx.Bell()
-                        if wx.MessageBox(f'Fab Export Error\n{ret["str"]}\n\n{getstr("CONTINUE?")}', "GerberZipper2", wx.YES_NO) == wx.NO:
+                        if alert(f'Fab Export\n\n{ret["str"]}\n\n{getstr("CONTINUE?")}', wx.CANCEL) == wx.CANCEL:
                             self.Complete('\nAborted\n')
                             return
                     self.Cprint('Done\n')
@@ -281,8 +283,10 @@ class ExecDialog(wx.Dialog):
                     ret = BomPosExec(self.parent, self.board)
                     self.Cprint(ret['str'])
                     if ret['stat'] > 0:
-                        self.Complete('\nAborted\n')
-                        return
+                        wx.Bell()
+                        if alert(f'BOM/POS Export\n\n{ret["str"]}\n\n{getstr("CONTINUE?")}', wx.CANCEL) == wx.CANCEL:
+                            self.Complete('\nAborted\n')
+                            return
                     self.Cprint('Done\n')
                 else:
                     self.Cprint('Skip\n')
@@ -291,22 +295,11 @@ class ExecDialog(wx.Dialog):
                 self.Complete(f'\n===== {getstr("COMPLETE")} =====\n')
                 return
         except Exception as e:
-            dlg = wx.MessageDialog(
-                None,
-                'An error occurred. Retry?',
-                'GerberZipper2',
-                wx.YES_NO|wx.CANCEL
-            )
-            dlg.SetYesNoCancelLabels("Retry", "Skip", "Abort")
-            r = dlg.ShowModal()
-            if r == wx.ID_YES:
-                self.Cprint('Exception Retry')
-                wx.CallLater(500, self.Exec)
-            elif r == wx.ID_NO:
-                self.Cprint('Exception Skip')
-                self.Progress()
-            else:
-                self.Complete(str(e))
+            wx.Bell()
+            if alert(f'An error occurred\n\n{str(e)}\n\n{getstr("CONTINUE?")}', wx.CANCEL) == wx.CANCEL:
+                self.Complete('\nAborted\n')
+                return
+            self.Progress()
 
 class CustomMessageDialog(wx.Dialog):
     def __init__(self, parent, title, message, flag, size):
@@ -336,11 +329,6 @@ def alert(s, flag=0, size=(650,240)):
     wx.Bell()
     r = dlg.ShowModal()
     dlg.Destroy()
-    return r
-
-def alert2(s, icon=0):
-    dialog = wx.MessageDialog(None, s, f'{title}', icon)
-    r = dialog.ShowModal()
     return r
 
 def InitEm():
@@ -554,7 +542,7 @@ def SubprocRun(cmd):
         ret = subprocess.run(cmd, text=False, capture_output=True, shell=True, startupinfo=startupinfo)
     try:
         txt = ret.stdout.decode('utf-8')
-    except Exception:
+    except Exception:   #workaround for codepage error on different lang
         try:
             txt = ret.stdout.decode('cp932')
         except Exception:
@@ -619,7 +607,7 @@ def GerberExec(self, board):
     execDialog.Cprint(f'cmd : {cmd}')
     ret = SubprocRun(cmd)
     if ret['stat'] != 0:
-        raise Exception(f'export grbers Error : \n{ret["str"]}')
+        return ret
     for k in kylist:
         if layers[k] != '':
             fname = getfname(k)
@@ -660,13 +648,9 @@ def GerberExec(self, board):
             alert('Drill report option require KiCad version >= 10.x')
     cmd = f'"{kicadcli_path}" pcb export drill {opt} -o "{self.temp_dir}" --format excellon "{self.board_path}"'
     execDialog.Cprint(f'cmd : {cmd}')
-    try:
-        ret = SubprocRun(cmd)
-    except Exception as err:
-        execDialog.Cprint(f'cmd : {cmd}')
-        ret = SubprocRun(cmd2)
+    ret = SubprocRun(cmd)
     if ret['stat'] != 0:
-        raise Exception(f'export drill Error : \n{ret["stat"]}')
+        return ret
     if self.settings['MergePTHandNPTH']:
         renamefile(self.temp_dir, f'{self.basename}.drl', self.gerber_dir, self.settings['Drill']['Drill'].replace('*', self.basename), zipfiles)
         if self.settings['Drill']['DrillMap'] != '':

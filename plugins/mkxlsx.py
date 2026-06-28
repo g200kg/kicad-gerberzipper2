@@ -269,18 +269,25 @@ class MkXlsx():
             self.col_width.append(-1)
         self.col_width[col] = width
 
+    def mk_dir(self, zf, d):
+        if hasattr(zf, 'mkdir'):
+            zf.mkdir(d)
+            return
+        zinfo = zipfile.ZipInfo(d+'/')
+        zf.writestr(zinfo, '')
+
     def close(self):
         with zipfile.ZipFile(self.filename, 'w', compression=zipfile.ZIP_DEFLATED) as zf:
             dic = self._make_dic()
-            zf.mkdir('_rels')
+            self.mk_dir(zf, '_rels')
             zf.writestr('_rels/.rels', template['_rels/.rels'])
-            zf.mkdir('docProps')
+            self.mk_dir(zf, 'docProps')
             zf.writestr('docProps/app.xml', template['docProps/app.xml'])
             zf.writestr('docProps/core.xml', self._replace_dic(template['docProps/core.xml'], dic))
-            zf.mkdir('xl')
-            zf.mkdir('xl/_rels')
+            self.mk_dir(zf, 'xl')
+            self.mk_dir(zf, 'xl/_rels')
             zf.writestr('xl/_rels/workbook.xml.rels', template['xl/_rels/workbook.xml.rels'])
-            zf.mkdir('xl/worksheets')
+            self.mk_dir(zf, 'xl/worksheets')
             zf.writestr('xl/worksheets/sheet1.xml', self._replace_dic(template['xl/worksheets/sheet1.xml'], dic))
             zf.writestr('xl/sharedStrings.xml', self._replace_dic(template['xl/sharedStrings.xml'], dic))
             zf.writestr('xl/styles.xml', template['xl/styles.xml'])
