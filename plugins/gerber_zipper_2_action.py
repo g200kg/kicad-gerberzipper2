@@ -324,7 +324,7 @@ class CustomMessageDialog(wx.Dialog):
     def OnCancel(self, event):
         self.EndModal(wx.CANCEL)
 
-def alert(s, flag=0, size=(650,240)):
+def alert(s, flag=0, size=(650,260)):
     dlg = CustomMessageDialog(None, f'{title}', s, flag, size)
     wx.Bell()
     r = dlg.ShowModal()
